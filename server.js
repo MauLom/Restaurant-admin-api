@@ -3,7 +3,6 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const config = require('./config');
 const inventoryRoutes = require('./routes/inventory');
 const orderRoutes = require('./routes/order');
 const userRoutes = require('./routes/user');
