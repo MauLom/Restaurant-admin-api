@@ -1,8 +1,8 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const inventoryRoutes = require('./routes/inventory');
 const orderRoutes = require('./routes/order');
 const userRoutes = require('./routes/user');
@@ -11,6 +11,9 @@ const app = express();
 
 // Middleware
 app.use(bodyParser.json());
+
+// Enable CORS
+app.use(cors());
 
 // Routes
 app.use('/api/inventory', inventoryRoutes);
