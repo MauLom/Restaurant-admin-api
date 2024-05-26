@@ -1,6 +1,6 @@
-// controllers/userController.js
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 exports.registerUser = async (req, res) => {
   const { username, password, pin, role } = req.body;
@@ -35,7 +35,8 @@ exports.authenticateUser = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid password' });
     }
-    res.status(200).json({ message: 'Authentication successful', user });
+    const token = jwt.sign({ userId: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.status(200).json({ token, user });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -52,7 +53,8 @@ exports.authenticateUserByPin = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid PIN' });
     }
-    res.status(200).json({ message: 'Authentication successful', user });
+    const token = jwt.sign({ userId: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.status(200).json({ token, user });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
