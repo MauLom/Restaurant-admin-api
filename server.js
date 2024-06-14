@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const inventoryRoutes = require('./routes/inventory');
 const orderRoutes = require('./routes/order');
 const userRoutes = require('./routes/user');
+const analysisRoutes = require('./routes/analysis');
 require('dotenv').config();
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(bodyParser.json());
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/analysis', analysisRoutes);
 
 const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 

@@ -34,12 +34,12 @@ exports.createOrder = async (req, res) => {
       totalPrice,
       status: 'Pending',
       createdBy,
-      numberOfPeople, // Include number of people
+      numberOfPeople,
       statusChangedAt: Date.now()
     });
 
     await newOrder.save();
-    io.emit('orderCreated', newOrder);
+    io.emit('orderCreated', newOrder); // Emit event
     res.status(201).json(newOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -78,7 +78,7 @@ exports.updateOrder = async (req, res) => {
     }
 
     const updatedOrder = await Order.findByIdAndUpdate(id, updateData, { new: true });
-    io.emit('orderUpdated', updatedOrder);
+    io.emit('orderUpdated', updatedOrder); // Emit event
     res.status(200).json(updatedOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });
