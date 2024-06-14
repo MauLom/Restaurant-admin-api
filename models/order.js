@@ -1,4 +1,3 @@
-// models/order.js
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -11,8 +10,10 @@ const OrderSchema = new Schema({
   ],
   totalPrice: { type: Number, required: true },
   status: { type: String, enum: ['Pending', 'Processed', 'Paid'], default: 'Pending' },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  numberOfPeople: { type: Number, required: true }, 
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  statusChangedAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('Order', OrderSchema);
