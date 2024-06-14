@@ -1,6 +1,6 @@
 const Order = require('../models/order');
 const Inventory = require('../models/inventory');
-const io = require('../server'); // Import the io object
+const io = require('../server');
 
 exports.getAllOrders = async (req, res) => {
   try {
@@ -15,7 +15,6 @@ exports.createOrder = async (req, res) => {
   try {
     const { items, createdBy, numberOfPeople } = req.body;
     
-    // Validate and update inventory
     const inventoryUpdates = [];
     for (const item of items) {
       const inventoryItem = await Inventory.findById(item.itemId);
@@ -26,7 +25,6 @@ exports.createOrder = async (req, res) => {
       inventoryUpdates.push(inventoryItem.save());
     }
 
-    // Save inventory updates
     await Promise.all(inventoryUpdates);
 
     const totalPrice = items.reduce((total, item) => total + (item.quantity * item.sellPrice), 0);
@@ -36,12 +34,12 @@ exports.createOrder = async (req, res) => {
       totalPrice,
       status: 'Pending',
       createdBy,
-      numberOfPeople,
+      numberOfPeople, // Include number of people
       statusChangedAt: Date.now()
     });
 
     await newOrder.save();
-    io.emit('orderCreated', newOrder); // Emit event
+    io.emit('orderCreated', newOrder);
     res.status(201).json(newOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -57,19 +55,16 @@ exports.updateOrder = async (req, res) => {
       updateData.statusChangedAt = Date.now();
     }
 
-    // Update inventory if items have changed
     if (updateData.items) {
       const order = await Order.findById(id);
       const inventoryUpdates = [];
 
-      // Revert inventory for old items
       for (const item of order.items) {
         const inventoryItem = await Inventory.findById(item.itemId);
         inventoryItem.quantity += item.quantity;
         inventoryUpdates.push(inventoryItem.save());
       }
 
-      // Validate and update inventory for new items
       for (const item of updateData.items) {
         const inventoryItem = await Inventory.findById(item.itemId);
         if (!inventoryItem || inventoryItem.quantity < item.quantity) {
@@ -79,12 +74,11 @@ exports.updateOrder = async (req, res) => {
         inventoryUpdates.push(inventoryItem.save());
       }
 
-      // Save inventory updates
       await Promise.all(inventoryUpdates);
     }
 
     const updatedOrder = await Order.findByIdAndUpdate(id, updateData, { new: true });
-    io.emit('orderUpdated', updatedOrder); // Emit event
+    io.emit('orderUpdated', updatedOrder);
     res.status(200).json(updatedOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });

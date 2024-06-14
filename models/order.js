@@ -11,7 +11,7 @@ const OrderSchema = new Schema({
   totalPrice: { type: Number, required: true },
   status: { type: String, enum: ['Pending', 'Processed', 'Paid'], default: 'Pending' },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  numberOfPeople: { type: Number, required: true }, // Add this field
+  numberOfPeople: { type: Number, required: true }, 
   createdAt: { type: Date, default: Date.now },
   statusChangedAt: { type: Date, default: Date.now }
 });
