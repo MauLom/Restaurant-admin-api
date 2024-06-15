@@ -1,10 +1,24 @@
 const Order = require('../models/order');
 const Inventory = require('../models/inventory');
-const io = require('../server');
+const { getIO } = require('../websocket');  // Import the websocket module
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find().populate('items.itemId');
+    const { status, date } = req.query;
+    let query = {};
+
+    if (status) {
+      query.status = status;
+    }
+
+    if (date) {
+      const start = new Date(date);
+      const end = new Date(date);
+      end.setDate(end.getDate() + 1);
+      query.createdAt = { $gte: start, $lt: end };
+    }
+
+    const orders = await Order.find(query).populate('items.itemId');
     res.status(200).json(orders);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -13,7 +27,7 @@ exports.getAllOrders = async (req, res) => {
 
 exports.createOrder = async (req, res) => {
   try {
-    const { items, createdBy, numberOfPeople } = req.body;
+    const { items, createdBy, numberOfPeople, paymentMethod } = req.body;
     
     const inventoryUpdates = [];
     for (const item of items) {
@@ -35,11 +49,13 @@ exports.createOrder = async (req, res) => {
       status: 'Pending',
       createdBy,
       numberOfPeople,
+      paymentMethod,
       statusChangedAt: Date.now()
     });
 
     await newOrder.save();
-    io.emit('orderCreated', newOrder); // Emit event
+    const io = getIO();  // Get the WebSocket instance
+    io.emit('orderCreated', newOrder);  // Emit event
     res.status(201).json(newOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -78,7 +94,8 @@ exports.updateOrder = async (req, res) => {
     }
 
     const updatedOrder = await Order.findByIdAndUpdate(id, updateData, { new: true });
-    io.emit('orderUpdated', updatedOrder); // Emit event
+    const io = getIO();  // Get the WebSocket instance
+    io.emit('orderUpdated', updatedOrder);  // Emit event
     res.status(200).json(updatedOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });

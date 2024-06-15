@@ -13,7 +13,8 @@ const OrderSchema = new Schema({
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   numberOfPeople: { type: Number, required: true }, 
   createdAt: { type: Date, default: Date.now },
-  statusChangedAt: { type: Date, default: Date.now }
+  statusChangedAt: { type: Date, default: Date.now },
+  paymentMethod: { type: String, enum: ['Transferencia', 'Tarjeta', 'Efectivo', 'Cortesia', 'None'], default: 'None' }
 });
 
 module.exports = mongoose.model('Order', OrderSchema);

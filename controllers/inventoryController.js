@@ -1,16 +1,14 @@
-// controllers/inventoryController.js
 const Inventory = require('../models/inventory');
 
 exports.addItem = async (req, res) => {
-    const { name, sellPrice, costAmount, quantity } = req.body;
+    const { name, sellPrice, costAmount, quantity, category } = req.body; // Add category
     try {
-        // Check if an item with the same name already exists
         const existingItem = await Inventory.findOne({ name });
         if (existingItem) {
             return res.status(400).json({ error: 'Item with the same name already exists' });
         }
 
-        const newItem = new Inventory({ name, sellPrice, costAmount, quantity });
+        const newItem = new Inventory({ name, sellPrice, costAmount, quantity, category });
         await newItem.save();
         res.status(201).json(newItem);
     } catch (error) {
