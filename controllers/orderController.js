@@ -28,7 +28,11 @@ exports.getAllOrders = async (req, res) => {
 exports.createOrder = async (req, res) => {
   try {
     const { items, createdBy, numberOfPeople, paymentMethod } = req.body;
-    
+
+    if (!items || !createdBy || !numberOfPeople) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
     const inventoryUpdates = [];
     for (const item of items) {
       const inventoryItem = await Inventory.findById(item.itemId);
@@ -41,7 +45,10 @@ exports.createOrder = async (req, res) => {
 
     await Promise.all(inventoryUpdates);
 
-    const totalPrice = items.reduce((total, item) => total + (item.quantity * item.sellPrice), 0);
+    const totalPrice = items.reduce((total, item) => {
+      const sellPrice = item.sellPrice !== undefined ? item.sellPrice : 0;
+      return total + (item.quantity * sellPrice);
+    }, 0);
 
     const newOrder = new Order({
       items: items.map(item => ({ itemId: item.itemId, quantity: item.quantity })),
@@ -54,13 +61,16 @@ exports.createOrder = async (req, res) => {
     });
 
     await newOrder.save();
-    const io = getIO();  // Get the WebSocket instance
-    io.emit('orderCreated', newOrder);  // Emit event
-    res.status(201).json(newOrder);
+    const populatedOrder = await newOrder.populate('items.itemId').execPopulate();
+    const io = getIO();
+    io.emit('orderCreated', populatedOrder);
+    res.status(201).json(populatedOrder);
   } catch (error) {
+    console.error("Error creating order:", error);
     res.status(400).json({ error: error.message });
   }
 };
+
 
 exports.updateOrder = async (req, res) => {
   try {
