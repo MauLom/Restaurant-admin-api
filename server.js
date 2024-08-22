@@ -6,6 +6,8 @@ const inventoryRoutes = require('./routes/inventory');
 const orderRoutes = require('./routes/order');
 const userRoutes = require('./routes/user');
 const analysisRoutes = require('./routes/analysis');
+const menuRoutes = require('./routes/menu');
+
 require('dotenv').config();
 const { init } = require('./websocket');  // Import the websocket module
 
@@ -22,6 +24,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/analysis', analysisRoutes);
+app.use('/api/menu', menuRoutes);
 
 const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
