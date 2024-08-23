@@ -29,7 +29,7 @@ exports.createOrder = async (req, res) => {
   try {
     const { items, createdBy, numberOfPeople, paymentMethod } = req.body;
 
-    if (!items || !createdBy || !numberOfPeople) {
+    if (!items || !numberOfPeople) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -54,14 +54,18 @@ exports.createOrder = async (req, res) => {
       items: items.map(item => ({ itemId: item.itemId, quantity: item.quantity })),
       totalPrice,
       status: 'Pending',
-      createdBy,
+      createdBy: createdBy || null,  // Handle anonymous users by allowing null or empty value
       numberOfPeople,
       paymentMethod,
       statusChangedAt: Date.now()
     });
 
+    // Save the new order
     await newOrder.save();
-    const populatedOrder = await newOrder.populate('items.itemId').execPopulate();
+
+    // Populate the items in the saved order
+    const populatedOrder = await newOrder.populate('items.itemId');
+
     const io = getIO();
     io.emit('orderCreated', populatedOrder);
     res.status(201).json(populatedOrder);
@@ -71,11 +75,10 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-
 exports.updateOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { items } = req.body;
 
     // Find the existing order
     const order = await Order.findById(id);
@@ -83,18 +86,14 @@ exports.updateOrder = async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    // Update inventory quantities based on the changes in the order
-    const inventoryUpdates = [];
-
-    // Restore inventory quantities from the existing order
-    for (const item of order.items) {
-      const inventoryItem = await Inventory.findById(item.itemId);
-      inventoryItem.quantity += item.quantity;
-      inventoryUpdates.push(inventoryItem.save());
+    // Allow modification only if the status is Delivered
+    if (order.status !== 'Delivered') {
+      return res.status(400).json({ error: 'Order must be Delivered to add new items' });
     }
 
-    // Adjust inventory quantities based on the updated order
-    for (const item of updateData.items) {
+    // Update inventory quantities for new items
+    const inventoryUpdates = [];
+    for (const item of items) {
       const inventoryItem = await Inventory.findById(item.itemId);
       if (!inventoryItem || inventoryItem.quantity < item.quantity) {
         return res.status(400).json({ error: `Insufficient quantity for item ${item.name}` });
@@ -105,19 +104,63 @@ exports.updateOrder = async (req, res) => {
 
     await Promise.all(inventoryUpdates);
 
-    // Update the order
-    updateData.totalPrice = updateData.items.reduce((total, item) => total + (item.quantity * item.sellPrice), 0);
-    updateData.items = updateData.items.map(item => ({ itemId: item.itemId, quantity: item.quantity }));
+    // Append new items to the order and recalculate the total
+    order.items = [...order.items, ...items];
+    order.totalPrice = order.items.reduce((total, item) => total + (item.quantity * item.sellPrice), 0);
 
-    if (updateData.status) {
-      updateData.statusChangedAt = Date.now();
-    }
+    // Change status to Updated
+    order.status = 'Updated';
+    order.statusChangedAt = Date.now();
 
-    const updatedOrder = await Order.findByIdAndUpdate(id, updateData, { new: true }).populate('items.itemId');
-    const io = getIO();  // Get the WebSocket instance
-    io.emit('orderUpdated', updatedOrder);  // Emit event
-    res.status(200).json(updatedOrder);
+    await order.save();
+    const io = getIO();  // Emit order update to clients
+    io.emit('orderUpdated', order);
+
+    res.status(200).json(order);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
+
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ error: 'Missing status' });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Validation to prevent invalid status transitions
+    if (status === 'Paid' && order.status !== 'Delivered') {
+      return res.status(400).json({ error: 'Order must be Delivered before being marked as Paid' });
+    }
+
+    if (status === 'Delivered' && order.status !== 'Created' && order.status !== 'Updated') {
+      return res.status(400).json({ error: 'Order must be Created or Updated to mark as Delivered' });
+    }
+
+    if (status === 'Updated' && order.status !== 'Delivered') {
+      return res.status(400).json({ error: 'Order must be Delivered before updating' });
+    }
+
+    order.status = status;
+    order.statusChangedAt = Date.now();
+
+    await order.save();
+
+    const io = getIO();  // Emit status change to clients
+    io.emit('orderStatusUpdated', order);
+
+    res.status(200).json(order);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+

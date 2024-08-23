@@ -9,7 +9,11 @@ const OrderSchema = new Schema({
     }
   ],
   totalPrice: { type: Number, required: true },
-  status: { type: String, enum: ['Pending', 'Processed', 'Paid'], default: 'Pending' },
+  status: { 
+    type: String, 
+    enum: ['Created', 'Delivered', 'Updated', 'Paid'], 
+    default: 'Created' 
+  },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   numberOfPeople: { type: Number, required: true }, 
   createdAt: { type: Date, default: Date.now },
