@@ -6,7 +6,7 @@ const inventoryRoutes = require('./routes/inventory');
 const orderRoutes = require('./routes/order');
 const userRoutes = require('./routes/user');
 const analysisRoutes = require('./routes/analysis');
-const menuRoutes = require('./routes/menu');
+const menuRoutes = require('./routes/menuItem');
 
 require('dotenv').config();
 const { init } = require('./websocket');  // Import the websocket module
