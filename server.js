@@ -25,6 +25,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api/tablesManagement', require('./routes/tablesManagement'));
 
 const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
