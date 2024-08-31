@@ -54,24 +54,33 @@ const handlePinEntry = async (chatId, pin, bot) => {
 
 const handleAliasEntry = async (chatId, alias, bot) => {
   try {
-    const session = new Session({
-      telegramUserId: chatId,
-      pin: pendingUsers[chatId].pin,
-      alias: alias,
-      expiresAt: new Date(Date.now() + 10 * 60 * 60 * 1000) // 10 hours from now
-    });
+    // Find the session by PIN and update it with the telegramUserId and alias
+    const session = await Session.findOneAndUpdate(
+      { pin: pendingUsers[chatId].pin, telegramUserId: null },  // Ensure the session is unassigned
+      {
+        telegramUserId: chatId,
+        alias: alias,
+        expiresAt: new Date(Date.now() + 10 * 60 * 60 * 1000) // 10 hours from now
+      },
+      { new: true }  // Return the updated document
+    );
 
-    await session.save();
-    console.log(`Session saved for user: ${alias}`);
+    if (!session) {
+      bot.sendMessage(chatId, '⚠️ Error: PIN no válido o ya asignado. Intenta de nuevo.');
+      return;
+    }
+
+    console.log(`Session updated for user: ${alias}`);
     bot.sendMessage(chatId, `🎉 Bienvenido, ${alias}! Ahora puedes realizar pedidos. ${generateOrderInstruction()}`);
     
     // Clean up the pendingUsers state
     delete pendingUsers[chatId];
   } catch (error) {
-    console.error('Error saving session:', error);
+    console.error('Error updating session:', error);
     bot.sendMessage(chatId, '⚠️ Error al guardar la sesión. Intenta de nuevo.');
   }
 };
+
 
 module.exports = {
   isSessionValid,
