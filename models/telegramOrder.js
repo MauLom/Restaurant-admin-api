@@ -1,4 +1,7 @@
-const TelegramOrderSchema = new mongoose.Schema({
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const TelegramOrderSchema = new Schema({
   items: [{
     item: String,
     quantity: Number

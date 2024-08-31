@@ -1,23 +1,24 @@
 const TelegramOrder = require('../models/telegramOrder');
 const websocket = require('../websocket');
-const TelegramBot = require('node-telegram-bot-api');
 const bot = require('../telegramBot');
 
-// List of League of Legends champions (just a few for example)
 const championNames = ['Twitch', 'Yasuo', 'Illaoi', 'Ahri', 'Garen', 'Lux', 'Teemo', 'Jinx', 'Riven', 'Zed', 'Ekko', 'Fiora', 'Rengar', 'Akali', 'Vayne', 'Thresh', 'Nami', 'Draven', 'Katarina', 'Aatrox'];
 
 exports.createTelegramOrder = async (req, res) => {
   try {
     const { message, telegramUserId } = req.body;
 
-    // Correctly parse the message to extract multiple items and quantities
-    const orderRegex = /(\d+)\s+de\s+([^\d]+)/gi;
-    let matches;
+    // Split by comma first, then apply the regex
+    const orderParts = message.split(',');
+    const orderRegex = /(\d+)\s+de\s+(.+)/i;
     const items = [];
 
-    while ((matches = orderRegex.exec(message)) !== null) {
-      items.push({ quantity: parseInt(matches[1], 10), item: matches[2].trim() });
-    }
+    orderParts.forEach(part => {
+      const matches = orderRegex.exec(part.trim());
+      if (matches) {
+        items.push({ quantity: parseInt(matches[1], 10), item: matches[2].trim() });
+      }
+    });
 
     if (items.length === 0) {
       return res.status(400).json({ error: 'Formato de orden invalido' });
