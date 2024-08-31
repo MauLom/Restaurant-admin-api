@@ -10,7 +10,7 @@ exports.createTelegramOrder = async (req, res) => {
   try {
     const { message, telegramUserId } = req.body;
 
-    // Parse the message to extract multiple items and quantities
+    // Correctly parse the message to extract multiple items and quantities
     const orderRegex = /(\d+)\s+de\s+([^\d]+)/gi;
     let matches;
     const items = [];
