@@ -14,7 +14,7 @@ bot.onText(/\/createpin/, async (msg) => {
 
   // Admin check (assuming you have a way to verify admin users, for example by their chat ID)
   if (chatId !== '7427933674') { // Replace with your actual admin chat ID
-    bot.sendMessage(chatId, '⚠️ No tienes permisos para realizar esta acción.');
+    bot.sendMessage(chatId, '⚠️ No tienes permisos para realizar esta acción. Tu ChatId: ' + chatId );
     return;
   }
 
