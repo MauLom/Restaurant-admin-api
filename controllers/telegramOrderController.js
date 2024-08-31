@@ -3,7 +3,7 @@ const MenuItem = require('../models/menuItem');
 const Inventory = require('../models/inventory');
 const websocket = require('../websocket');
 const TelegramBot = require('node-telegram-bot-api');
-const bot = new TelegramBot('7427933674:AAFMYmgUHdxr4oz4tcpbULRVs7EpY1EO5l0');
+const bot = new TelegramBot('YOUR_BOT_TOKEN');
 
 exports.createTelegramOrder = async (req, res) => {
   try {
@@ -83,5 +83,14 @@ exports.updateTelegramOrderStatus = async (req, res) => {
     res.status(200).json(telegramOrder);
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+};
+
+exports.getAllTelegramOrders = async (req, res) => {
+  try {
+    const orders = await TelegramOrder.find().sort({ createdAt: -1 }); // Fetch all orders, sorted by creation date
+    res.status(200).json(orders);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
