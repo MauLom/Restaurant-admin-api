@@ -4,7 +4,7 @@ const generatePin = () => Math.floor(100000 + Math.random() * 900000).toString()
 const createPin = (bot) => async (msg) => {
   const chatId = msg.chat.id;
 
-  if (chatId !== '6235359835') { // Replace with your actual admin chat ID
+  if (chatId != '6235359835') { // Replace with your actual admin chat ID
     bot.sendMessage(chatId, '⚠️ No tienes permisos para realizar esta acción.');
     return;
   }
@@ -42,7 +42,7 @@ const killSession = (bot) => async (msg, match) => {
 const listPins = (bot) => async (msg) => {
   const chatId = msg.chat.id;
 
-  if (chatId !== '6235359835') {
+  if (chatId != '6235359835') {
     bot.sendMessage(chatId, '⚠️ No tienes permisos para realizar esta acción.');
     return;
   }
