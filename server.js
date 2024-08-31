@@ -10,6 +10,7 @@ const menuRoutes = require('./routes/menuItem');
 
 require('dotenv').config();
 const { init } = require('./websocket');  // Import the websocket module
+const telegramBot = require('./telegramBot');  // Import the Telegram bot
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -31,5 +32,8 @@ const server = app.listen(PORT, () => console.log(`Server running on port ${PORT
 
 // Initialize Socket.IO
 const io = init(server);  // Initialize WebSocket with the server
+
+// Start the Telegram bot
+telegramBot.startPolling();  // Start polling to handle incoming Telegram messages
 
 module.exports = io;
