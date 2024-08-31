@@ -20,7 +20,8 @@ bot.on('message', async (msg) => {
       });
 
       // Respond to the user in Telegram
-      bot.sendMessage(chatId, `Orden recibida: ${response.data.items.map(item => `${item.quantity} x ${item.item}`).join(', ')}`);
+      const itemList = response.data.items.map(item => `${item.quantity} x ${item.item}`).join(', ');
+      bot.sendMessage(chatId, `Orden recibida: ${itemList}`);
     } catch (error) {
       bot.sendMessage(chatId, `Error al crear orden: ${error.response?.data?.error || error.message}`);
     }
@@ -28,6 +29,5 @@ bot.on('message', async (msg) => {
     bot.sendMessage(chatId, 'Por favor envia la orden en el formato: Ordenar X de Y. Donde X es la cantidad y Y el plato. Puedes ordenar varios items, por ejemplo: Ordenar 1 de Boneless 2 de Arepas');
   }
 });
-
 
 module.exports = bot;

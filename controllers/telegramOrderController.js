@@ -3,12 +3,15 @@ const websocket = require('../websocket');
 const TelegramBot = require('node-telegram-bot-api');
 const bot = require('../telegramBot');
 
+// List of League of Legends champions (just a few for example)
+const championNames = ['Twitch', 'Yasuo', 'Illaoi', 'Ahri', 'Garen', 'Lux', 'Teemo', 'Jinx', 'Riven', 'Zed', 'Ekko', 'Fiora', 'Rengar', 'Akali', 'Vayne', 'Thresh', 'Nami', 'Draven', 'Katarina', 'Aatrox'];
+
 exports.createTelegramOrder = async (req, res) => {
   try {
     const { message, telegramUserId } = req.body;
 
     // Parse the message to extract multiple items and quantities
-    const orderRegex = /Ordenar\s+(\d+)\s+de\s+(.+?)(?=\s+(\d+)\s+de|$)/gi;
+    const orderRegex = /(\d+)\s+de\s+([^\d]+)/gi;
     let matches;
     const items = [];
 
@@ -20,6 +23,9 @@ exports.createTelegramOrder = async (req, res) => {
       return res.status(400).json({ error: 'Formato de orden invalido' });
     }
 
+    // Assign a random champion name as the temporary order ID
+    const tempOrderId = championNames[Math.floor(Math.random() * championNames.length)];
+
     // Create multiple Telegram order items
     const newTelegramOrder = new TelegramOrder({
       items: items.map(item => ({
@@ -28,7 +34,8 @@ exports.createTelegramOrder = async (req, res) => {
       })),
       createdByTelegramId: telegramUserId,
       status: 'In Preparation',
-      statusChangedAt: Date.now()
+      statusChangedAt: Date.now(),
+      tempOrderId: tempOrderId // Add the temporary ID to the order
     });
 
     await newTelegramOrder.save();
@@ -39,7 +46,7 @@ exports.createTelegramOrder = async (req, res) => {
 
     // Notify user on Telegram
     const itemList = items.map(item => `${item.quantity} x ${item.item}`).join(', ');
-    bot.sendMessage(telegramUserId, `Tu orden de ${itemList} fue recibida.`);
+    bot.sendMessage(telegramUserId, `Tu orden ${tempOrderId} de ${itemList} fue recibida.`);
 
     res.status(201).json(newTelegramOrder);
   } catch (error) {
@@ -66,7 +73,7 @@ exports.updateTelegramOrderStatus = async (req, res) => {
     io.emit('telegramOrderUpdated', telegramOrder);
 
     // Notify user on Telegram
-    bot.sendMessage(telegramOrder.createdByTelegramId, `El estatus de tu orden cambio a: ${status}.`);
+    bot.sendMessage(telegramOrder.createdByTelegramId, `El estatus de tu orden ${telegramOrder.tempOrderId} cambio a: ${status}.`);
 
     res.status(200).json(telegramOrder);
   } catch (error) {
