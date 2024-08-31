@@ -54,7 +54,7 @@ exports.updateTelegramOrderStatus = async (req, res) => {
 
     const telegramOrder = await TelegramOrder.findById(id);
     if (!telegramOrder) {
-      return res.status(404).json({ error: 'Order no encontrada' });
+      return res.status(404).json({ error: 'Orden no encontrada' });
     }
 
     telegramOrder.status = status;
@@ -89,7 +89,7 @@ exports.deleteTelegramOrder = async (req, res) => {
 
     const telegramOrder = await TelegramOrder.findById(id);
     if (!telegramOrder) {
-      return res.status(404).json({ error: 'Order no encontrada' });
+      return res.status(404).json({ error: 'Orden no encontrada' });
     }
 
     await telegramOrder.remove();
@@ -98,7 +98,7 @@ exports.deleteTelegramOrder = async (req, res) => {
     const io = websocket.getIO();
     io.emit('telegramOrderDeleted', { id });
 
-    res.status(200).json({ message: 'Order borrada exitosamente' });
+    res.status(200).json({ message: 'Orden borrada exitosamente' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
