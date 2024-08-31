@@ -2,13 +2,22 @@ const Session = require('../models/session');
 const pendingUsers = {};
 
 const isSessionValid = async (telegramUserId) => {
+  const ADMIN_TELEGRAM_ID = '6235359835'; // Replace with your actual admin chat ID
+
   try {
+    // Check if the user is the admin
+    if (telegramUserId === ADMIN_TELEGRAM_ID) {
+      console.log('Admin detected, bypassing session validation.');
+      return true;
+    }
+
     const session = await Session.findOne({ telegramUserId });
     console.log(`Checking session for user ID: ${telegramUserId}`);
     if (!session) {
       console.log('No session found.');
       return false;
     }
+
     const isValid = session.expiresAt > new Date();
     console.log(`Session found: ${session}`);
     console.log(`Is session valid? ${isValid}`);
@@ -18,6 +27,7 @@ const isSessionValid = async (telegramUserId) => {
     return false;  // If there's an error, treat it as an invalid session
   }
 };
+
 
 const generateOrderInstruction = () => {
   return `
