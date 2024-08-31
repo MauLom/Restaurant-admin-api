@@ -11,7 +11,7 @@ exports.createTelegramOrder = async (req, res) => {
     const orderRegex = /Ordenar\s+(\d+)\s+de\s+(.+)/i;
     const matches = message.match(orderRegex);
     if (!matches) {
-      return res.status(400).json({ error: 'Invalid order format' });
+      return res.status(400).json({ error: 'Formato de orden invalido' });
     }
 
     const quantity = parseInt(matches[1], 10);
@@ -33,7 +33,7 @@ exports.createTelegramOrder = async (req, res) => {
     io.emit('telegramOrderCreated', newTelegramOrder);
 
     // Notify user on Telegram
-    bot.sendMessage(telegramUserId, `Your order for ${quantity} x ${itemName} has been placed.`);
+    bot.sendMessage(telegramUserId, `Tu orden de ${quantity} x ${itemName} fue recibida.`);
 
     res.status(201).json(newTelegramOrder);
   } catch (error) {
@@ -48,7 +48,7 @@ exports.updateTelegramOrderStatus = async (req, res) => {
 
     const telegramOrder = await TelegramOrder.findById(id);
     if (!telegramOrder) {
-      return res.status(404).json({ error: 'Order not found' });
+      return res.status(404).json({ error: 'Order no encontrada' });
     }
 
     telegramOrder.status = status;
@@ -60,7 +60,7 @@ exports.updateTelegramOrderStatus = async (req, res) => {
     io.emit('telegramOrderUpdated', telegramOrder);
 
     // Notify user on Telegram
-    bot.sendMessage(telegramOrder.createdByTelegramId, `Your order status has been updated to: ${status}.`);
+    bot.sendMessage(telegramOrder.createdByTelegramId, `El estatus de tu orden cambio a: ${status}.`);
 
     res.status(200).json(telegramOrder);
   } catch (error) {

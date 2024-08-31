@@ -20,12 +20,12 @@ bot.on('message', async (msg) => {
       });
 
       // Respond to the user in Telegram
-      bot.sendMessage(chatId, `Order received: ${response.data.item}`);
+      bot.sendMessage(chatId, `Order recibida: ${response.data.item}`);
     } catch (error) {
-      bot.sendMessage(chatId, `Failed to place order: ${error.response?.data?.error || error.message}`);
+      bot.sendMessage(chatId, `Error al crear orden: ${error.response?.data?.error || error.message}`);
     }
   } else {
-    bot.sendMessage(chatId, 'Please send the order in the format: Order X of Y');
+    bot.sendMessage(chatId, 'Por favor envia la orden en el formato: Ordenar X de Y. Donde X es la cantidad y Y el plato');
   }
 });
 
