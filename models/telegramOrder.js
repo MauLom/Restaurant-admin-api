@@ -14,9 +14,14 @@ const TelegramOrderSchema = new Schema({
     enum: ['In Preparation', 'Ready for Delivery', 'Delivered'],
     default: 'In Preparation'
   },
-  statusChangedAt: Date,
+  statusChangedAt: {
+    type: Date,
+    default: Date.now
+  },
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
+
+module.exports = mongoose.model('TelegramOrder', TelegramOrderSchema);
