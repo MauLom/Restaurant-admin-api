@@ -9,19 +9,18 @@ const TelegramOrderSchema = new Schema({
   createdByTelegramId: String,
   createdByAlias: String,  // Field for alias if needed
   tempOrderId: String,      // Field for the temporary order ID
+  type: String,             // Field to store the order type (kitchen, bar, etc.)
   status: {
     type: String,
     enum: ['In Preparation', 'Ready for Delivery', 'Delivered'],
     default: 'In Preparation'
   },
-  statusChangedAt: {
-    type: Date,
-    default: Date.now
-  },
+  statusChangedAt: Date,
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
+
 
 module.exports = mongoose.model('TelegramOrder', TelegramOrderSchema);

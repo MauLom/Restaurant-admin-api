@@ -6,7 +6,7 @@ const championNames = ['Twitch', 'Yasuo', 'Illaoi', 'Ahri', 'Garen', 'Lux', 'Tee
 
 exports.createTelegramOrder = async (req, res) => {
   try {
-    const { message, telegramUserId } = req.body;
+    const { message, telegramUserId, type } = req.body;
 
     // Split by comma first, then apply the regex
     const orderParts = message.split(',');
@@ -36,7 +36,8 @@ exports.createTelegramOrder = async (req, res) => {
       createdByTelegramId: telegramUserId,
       status: 'In Preparation',
       statusChangedAt: Date.now(),
-      tempOrderId: tempOrderId // Add the temporary ID to the order
+      tempOrderId: tempOrderId, // Add the temporary ID to the order
+      type: type // Add the type (kitchen, bar, etc.) to the order
     });
 
     await newTelegramOrder.save();
@@ -54,6 +55,7 @@ exports.createTelegramOrder = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 exports.updateTelegramOrderStatus = async (req, res) => {
   try {
@@ -84,12 +86,20 @@ exports.updateTelegramOrderStatus = async (req, res) => {
 
 exports.getAllTelegramOrders = async (req, res) => {
   try {
-    const orders = await TelegramOrder.find().sort({ createdAt: -1 }); // Fetch all orders, sorted by creation date
+    const { type } = req.query; // Get the type from the query string
+
+    let query = {};
+    if (type) {
+      query.type = type; // Filter orders by the provided type
+    }
+
+    const orders = await TelegramOrder.find(query).sort({ createdAt: -1 }); // Fetch filtered orders, sorted by creation date
     res.status(200).json(orders);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 exports.deleteTelegramOrder = async (req, res) => {
   try {
