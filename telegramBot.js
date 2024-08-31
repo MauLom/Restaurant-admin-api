@@ -10,7 +10,7 @@ bot.on('message', async (msg) => {
   const text = msg.text;
 
   // Check if the message matches the expected format
-  const orderRegex = /^Order\s+\d+\s+of\s+.+$/i;
+  const orderRegex = /^Ordenar\s+\d+\s+de\s+.+$/i;
   if (orderRegex.test(text)) {
     try {
       // Send the order message to your API
