@@ -13,7 +13,7 @@ bot.onText(/\/createpin/, async (msg) => {
   const chatId = msg.chat.id;
 
   // Admin check (assuming you have a way to verify admin users, for example by their chat ID)
-  if (chatId !== '7427933674') { // Replace with your actual admin chat ID
+  if (chatId !== '6235359835') { // Replace with your actual admin chat ID
     bot.sendMessage(chatId, '⚠️ No tienes permisos para realizar esta acción. Tu ChatId: ' + chatId );
     return;
   }
@@ -154,7 +154,7 @@ bot.onText(/\/listpins/, async (msg) => {
   const chatId = msg.chat.id;
 
   // Admin check (replace with your actual admin chat ID)
-  if (chatId !== '7427933674') {
+  if (chatId !== '6235359835') {
     bot.sendMessage(chatId, '⚠️ No tienes permisos para realizar esta acción.');
     return;
   }
