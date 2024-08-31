@@ -7,7 +7,7 @@ const orderRoutes = require('./routes/order');
 const userRoutes = require('./routes/user');
 const analysisRoutes = require('./routes/analysis');
 const menuRoutes = require('./routes/menuItem');
-
+const telegramOrderRoutes = require('./routes/telegramOrders')
 require('dotenv').config();
 const { init } = require('./websocket');  // Import the websocket module
 const telegramBot = require('./telegramBot');  // Import the Telegram bot
@@ -27,7 +27,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/tablesManagement', require('./routes/tablesManagement'));
-
+app.use('/api/telegram-orders', telegramOrderRoutes);
 const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // Initialize Socket.IO
