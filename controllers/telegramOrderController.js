@@ -1,16 +1,14 @@
 const TelegramOrder = require('../models/telegramOrder');
-const MenuItem = require('../models/menuItem');
-const Inventory = require('../models/inventory');
 const websocket = require('../websocket');
 const TelegramBot = require('node-telegram-bot-api');
-const bot = new TelegramBot('YOUR_BOT_TOKEN');
+const bot = require('../telegramBot');
 
 exports.createTelegramOrder = async (req, res) => {
   try {
     const { message, telegramUserId } = req.body;
 
     // Parse the message to extract quantity and item name
-    const orderRegex = /Order\s+(\d+)\s+of\s+(.+)/i;
+    const orderRegex = /Ordenar\s+(\d+)\s+de\s+(.+)/i;
     const matches = message.match(orderRegex);
     if (!matches) {
       return res.status(400).json({ error: 'Invalid order format' });
@@ -19,23 +17,7 @@ exports.createTelegramOrder = async (req, res) => {
     const quantity = parseInt(matches[1], 10);
     const itemName = matches[2].trim();
 
-    // Find the MenuItem by name
-    const menuItem = await MenuItem.findOne({ name: itemName });
-    if (!menuItem) {
-      return res.status(400).json({ error: `Menu item ${itemName} not found` });
-    }
-
-    // Deduct ingredients from inventory
-    for (const ingredient of menuItem.ingredients) {
-      const inventoryItem = await Inventory.findById(ingredient.inventoryItem);
-      if (!inventoryItem || inventoryItem.quantity < (ingredient.quantity * quantity)) {
-        return res.status(400).json({ error: `Insufficient stock for ingredient ${inventoryItem.name}` });
-      }
-      inventoryItem.quantity -= (ingredient.quantity * quantity);
-      await inventoryItem.save();
-    }
-
-    // Create a simplified Telegram order
+    // Create a Telegram order without checking the menu or inventory
     const newTelegramOrder = new TelegramOrder({
       item: itemName,
       quantity: quantity,
