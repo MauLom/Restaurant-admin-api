@@ -7,7 +7,8 @@ const TelegramOrderSchema = new Schema({
     quantity: Number
   }],
   createdByTelegramId: String,
-  createdByAlias: String,  // New field for alias
+  createdByAlias: String,  // Field for alias if needed
+  tempOrderId: String,      // Field for the temporary order ID
   status: {
     type: String,
     enum: ['In Preparation', 'Ready for Delivery', 'Delivered'],
