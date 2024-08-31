@@ -5,7 +5,6 @@ const mongoose = require('mongoose');
 
 const bot = new TelegramBot('7427933674:AAFMYmgUHdxr4oz4tcpbULRVs7EpY1EO5l0', { polling: true });
 
-
 const generatePin = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -14,7 +13,7 @@ bot.onText(/\/createpin/, async (msg) => {
   const chatId = msg.chat.id;
 
   // Admin check (assuming you have a way to verify admin users, for example by their chat ID)
-  if (chatId !== '<YOUR_ADMIN_CHAT_ID>') { // Replace with your actual admin chat ID
+  if (chatId !== '7427933674') { // Replace with your actual admin chat ID
     bot.sendMessage(chatId, '⚠️ No tienes permisos para realizar esta acción.');
     return;
   }
@@ -35,7 +34,6 @@ bot.onText(/\/createpin/, async (msg) => {
     bot.sendMessage(chatId, '⚠️ Error al generar el PIN. Intenta de nuevo.');
   }
 });
-
 
 // Store temporary state for users who are in the process of registration
 const pendingUsers = {};
@@ -156,7 +154,7 @@ bot.onText(/\/listpins/, async (msg) => {
   const chatId = msg.chat.id;
 
   // Admin check (replace with your actual admin chat ID)
-  if (chatId !== '<YOUR_ADMIN_CHAT_ID>') {
+  if (chatId !== '7427933674') {
     bot.sendMessage(chatId, '⚠️ No tienes permisos para realizar esta acción.');
     return;
   }
