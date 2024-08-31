@@ -1,6 +1,6 @@
 const TelegramOrder = require('../models/telegramOrder');
 const websocket = require('../websocket');
-const bot = require('../telegramBot');
+const bot = require('../telegramBot/bot');
 
 const championNames = ['Twitch', 'Yasuo', 'Illaoi', 'Ahri', 'Garen', 'Lux', 'Teemo', 'Jinx', 'Riven', 'Zed', 'Ekko', 'Fiora', 'Rengar', 'Akali', 'Vayne', 'Thresh', 'Nami', 'Draven', 'Katarina', 'Aatrox'];
 

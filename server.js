@@ -37,7 +37,7 @@ const { init } = require('./websocket');  // Import the websocket module
 const io = init(server);  // Initialize WebSocket with the server
 
 // Start the Telegram bot
-const telegramBot = require('./telegramBot');  // Import the Telegram bot
+const telegramBot = require('./telegramBot/bot');  // Import the Telegram bot
 telegramBot.startPolling();  // Start polling to handle incoming Telegram messages
 
 module.exports = io;
