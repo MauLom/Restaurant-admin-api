@@ -9,8 +9,8 @@ bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  // Check if the message matches the expected format
-  const orderRegex = /^Ordenar\s+\d+\s+de\s+.+$/i;
+  // Check if the message matches the expected format for multiple items
+  const orderRegex = /^Ordenar\s+(\d+\s+de\s+.+?)+$/i;
   if (orderRegex.test(text)) {
     try {
       // Send the order message to your API
@@ -20,13 +20,14 @@ bot.on('message', async (msg) => {
       });
 
       // Respond to the user in Telegram
-      bot.sendMessage(chatId, `Order recibida: ${response.data.item}`);
+      bot.sendMessage(chatId, `Orden recibida: ${response.data.items.map(item => `${item.quantity} x ${item.item}`).join(', ')}`);
     } catch (error) {
       bot.sendMessage(chatId, `Error al crear orden: ${error.response?.data?.error || error.message}`);
     }
   } else {
-    bot.sendMessage(chatId, 'Por favor envia la orden en el formato: Ordenar X de Y. Donde X es la cantidad y Y el plato');
+    bot.sendMessage(chatId, 'Por favor envia la orden en el formato: Ordenar X de Y. Donde X es la cantidad y Y el plato. Puedes ordenar varios items, por ejemplo: Ordenar 1 de Boneless 2 de Arepas');
   }
 });
+
 
 module.exports = bot;

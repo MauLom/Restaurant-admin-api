@@ -7,20 +7,25 @@ exports.createTelegramOrder = async (req, res) => {
   try {
     const { message, telegramUserId } = req.body;
 
-    // Parse the message to extract quantity and item name
-    const orderRegex = /Ordenar\s+(\d+)\s+de\s+(.+)/i;
-    const matches = message.match(orderRegex);
-    if (!matches) {
+    // Parse the message to extract multiple items and quantities
+    const orderRegex = /Ordenar\s+(\d+)\s+de\s+(.+?)(?=\s+(\d+)\s+de|$)/gi;
+    let matches;
+    const items = [];
+
+    while ((matches = orderRegex.exec(message)) !== null) {
+      items.push({ quantity: parseInt(matches[1], 10), item: matches[2].trim() });
+    }
+
+    if (items.length === 0) {
       return res.status(400).json({ error: 'Formato de orden invalido' });
     }
 
-    const quantity = parseInt(matches[1], 10);
-    const itemName = matches[2].trim();
-
-    // Create a Telegram order without checking the menu or inventory
+    // Create multiple Telegram order items
     const newTelegramOrder = new TelegramOrder({
-      item: itemName,
-      quantity: quantity,
+      items: items.map(item => ({
+        item: item.item,
+        quantity: item.quantity
+      })),
       createdByTelegramId: telegramUserId,
       status: 'In Preparation',
       statusChangedAt: Date.now()
@@ -33,7 +38,8 @@ exports.createTelegramOrder = async (req, res) => {
     io.emit('telegramOrderCreated', newTelegramOrder);
 
     // Notify user on Telegram
-    bot.sendMessage(telegramUserId, `Tu orden de ${quantity} x ${itemName} fue recibida.`);
+    const itemList = items.map(item => `${item.quantity} x ${item.item}`).join(', ');
+    bot.sendMessage(telegramUserId, `Tu orden de ${itemList} fue recibida.`);
 
     res.status(201).json(newTelegramOrder);
   } catch (error) {
@@ -72,6 +78,27 @@ exports.getAllTelegramOrders = async (req, res) => {
   try {
     const orders = await TelegramOrder.find().sort({ createdAt: -1 }); // Fetch all orders, sorted by creation date
     res.status(200).json(orders);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteTelegramOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const telegramOrder = await TelegramOrder.findById(id);
+    if (!telegramOrder) {
+      return res.status(404).json({ error: 'Order no encontrada' });
+    }
+
+    await telegramOrder.remove();
+
+    // Emit the `telegramOrderDeleted` event (if you want to notify the frontend via WebSocket)
+    const io = websocket.getIO();
+    io.emit('telegramOrderDeleted', { id });
+
+    res.status(200).json({ message: 'Order borrada exitosamente' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
