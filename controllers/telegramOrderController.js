@@ -8,6 +8,13 @@ exports.createTelegramOrder = async (req, res) => {
   try {
     const { message, telegramUserId, type } = req.body;
 
+    // Fetch the user's session to get the alias
+    const session = await Session.findOne({ telegramUserId });
+
+    if (!session) {
+      return res.status(400).json({ error: 'Session not found for this user.' });
+    }
+
     // Split by comma first, then apply the regex
     const orderParts = message.split(',');
     const orderRegex = /(\d+)\s+de\s+(.+)/i;
@@ -27,13 +34,15 @@ exports.createTelegramOrder = async (req, res) => {
     // Assign a random champion name as the temporary order ID
     const tempOrderId = championNames[Math.floor(Math.random() * championNames.length)];
 
-    // Create multiple Telegram order items
+    console.log("Session: ", session)
+    // Create the Telegram order
     const newTelegramOrder = new TelegramOrder({
       items: items.map(item => ({
         item: item.item,
         quantity: item.quantity
       })),
       createdByTelegramId: telegramUserId,
+      createdByAlias: session.alias, // Use the alias from the session
       status: 'In Preparation',
       statusChangedAt: Date.now(),
       tempOrderId: tempOrderId, // Add the temporary ID to the order
@@ -52,10 +61,10 @@ exports.createTelegramOrder = async (req, res) => {
 
     res.status(201).json(newTelegramOrder);
   } catch (error) {
+    console.error('Error creating Telegram order:', error);
     res.status(400).json({ error: error.message });
   }
 };
-
 
 exports.updateTelegramOrderStatus = async (req, res) => {
   try {
@@ -99,7 +108,6 @@ exports.getAllTelegramOrders = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 exports.deleteTelegramOrder = async (req, res) => {
   try {

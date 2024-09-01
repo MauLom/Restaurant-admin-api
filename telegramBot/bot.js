@@ -2,7 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const { handleKitchenOrder, handleBarOrder } = require('./handlers');
 const { isSessionValid, pendingUsers, generateOrderInstruction } = require('./session');
 
-const bot = new TelegramBot('YOUR_BOT_TOKEN', { polling: true });
+const bot = new TelegramBot('7427933674:AAFMYmgUHdxr4oz4tcpbULRVs7EpY1EO5l0', { polling: true });
 
 const ADMIN_TELEGRAM_ID = '6235359835'; // Replace with your actual admin chat ID
 
@@ -18,7 +18,6 @@ bot.on('message', async (msg) => {
 
   // Bypass session validation for the admin
   if (chatId == ADMIN_TELEGRAM_ID) {
-    console.log('Admin detected, bypassing session validation.');
     handleUserMessage(chatId, text, bot);
     return;
   }
@@ -49,12 +48,14 @@ bot.on('message', async (msg) => {
 });
 
 const handleUserMessage = (chatId, text, bot) => {
-  if (/^Ordenar\s+/i.test(text)) {
-    handleKitchenOrder(chatId, text, bot);
-  } else if (/^Bebida\s+/i.test(text)) {
-    handleBarOrder(chatId, text, bot);
-  } else {
-    bot.sendMessage(chatId, `⚠️ *Formato incorrecto.*\n${generateOrderInstruction()}`, { parse_mode: 'Markdown' });
+  if(!text.includes("/")){
+    if (/^Ordenar\s+/i.test(text)) {
+      handleKitchenOrder(chatId, text, bot);
+    } else if (/^Bebida\s+/i.test(text)) {
+      handleBarOrder(chatId, text, bot);
+    } else {
+      bot.sendMessage(chatId, `⚠️ *Formato incorrecto.*\n${generateOrderInstruction()}`, { parse_mode: 'Markdown' });
+    }
   }
 };
 

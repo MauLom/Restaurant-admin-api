@@ -7,23 +7,18 @@ const isSessionValid = async (telegramUserId) => {
   try {
     // Check if the user is the admin
     if (telegramUserId === ADMIN_TELEGRAM_ID) {
-      console.log('Admin detected, bypassing session validation.');
       return true;
     }
 
     const session = await Session.findOne({ telegramUserId });
-    console.log(`Checking session for user ID: ${telegramUserId}`);
     if (!session) {
-      console.log('No session found.');
       return false;
     }
 
     const isValid = session.expiresAt > new Date();
-    console.log(`Session found: ${session}`);
-    console.log(`Is session valid? ${isValid}`);
+
     return isValid;
   } catch (error) {
-    console.error('Error retrieving session:', error);
     return false;  // If there's an error, treat it as an invalid session
   }
 };
@@ -52,12 +47,10 @@ También puedes hacer múltiples pedidos en el mismo mensaje, separándolos por 
 
 const handlePinEntry = async (chatId, pin, bot) => {
   if (/^\d{6}$/.test(pin)) {
-    console.log(`Valid PIN entered: ${pin}`);
     pendingUsers[chatId].step = 'awaitingAlias';
     pendingUsers[chatId].pin = pin;
     bot.sendMessage(chatId, '✅ PIN validado. Por favor ingresa tu nombre de usuario:');
   } else {
-    console.log('Invalid PIN entered');
     bot.sendMessage(chatId, '⚠️ PIN inválido. Debe ser un número de 6 dígitos.');
   }
 };
@@ -80,13 +73,11 @@ const handleAliasEntry = async (chatId, alias, bot) => {
       return;
     }
 
-    console.log(`Session updated for user: ${alias}`);
     bot.sendMessage(chatId, `🎉 Bienvenido, ${alias}! Ahora puedes realizar pedidos. ${generateOrderInstruction()}`);
-    
+
     // Clean up the pendingUsers state
     delete pendingUsers[chatId];
   } catch (error) {
-    console.error('Error updating session:', error);
     bot.sendMessage(chatId, '⚠️ Error al guardar la sesión. Intenta de nuevo.');
   }
 };
