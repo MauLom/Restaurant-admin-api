@@ -1,197 +1,39 @@
-# Resto-Bar POS System
+# Restaurant Management Backend
 
-This is a Point of Sale (POS) system for a resto-bar, built using the MERN stack (MongoDB, Express, React, Node.js). The system includes inventory management and order processing functionalities.
+## Overview
+
+This project is a backend API for managing a restaurant's operations, including user management, orders, inventory, reservations, and more. It is designed to handle various roles within a restaurant such as admin, waiters, hostesses, and kitchen staff, providing functionalities for real-time updates, inventory management, order processing, and reservations.
+
+## Table of Contents
+
+- [Features](#features)
+- [Technologies Used](#technologies-used)
+- [Setup and Installation](#setup-and-installation)
+- [Environment Variables](#environment-variables)
+- [API Endpoints](#api-endpoints)
+  - [User Management](#user-management)
+  - [Orders](#orders)
+  - [Inventory](#inventory)
+  - [Reservations](#reservations)
+- [Testing](#testing)
+- [Project Structure](#project-structure)
+- [Future Enhancements](#future-enhancements)
 
 ## Features
 
-- **Inventory Management**: Add, update, delete items in the inventory.
-- **Order Processing**: Create orders, update order status, and manage open orders.
-- **User Authentication**: Register and authenticate users using either a password or PIN.
+- **User Management**: Role-based authentication and authorization with PIN-based login.
+- **Order Management**: Create, update, and manage orders, with table status integration.
+- **Inventory Management**: Add, retrieve, and delete inventory items.
+- **Reservation Management**: Create and manage reservations with real-time table status updates.
+- **Role-Based Access Control**: Fine-grained control over who can access and modify data based on roles (admin, waiter, hostess, etc.).
+- **Real-Time Updates**: Planned integration for real-time notifications and updates using WebSockets or similar technology.
 
-## Prerequisites
+## Technologies Used
 
-- Node.js and npm
-- MongoDB
-
-## Installation
-
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/MauLom/Restaurant-admin-api.git
-    cd resto-bar-pos
-    ```
-
-2. Install dependencies:
-    ```bash
-    npm install
-    ```
-
-3. Create a `.env` file in the root directory and add your environment variables:
-    ```env
-    MONGO_URI=your-mongodb-connection-string
-    PORT=5000
-    SECRET_KEY=your-secret-key
-    ```
-
-## Running the Application
-
-1. Start the server:
-    ```bash
-    npm run dev
-    ```
-
-2. The server will start on `http://localhost:5000`.
-
-## API Endpoints
-
-### Inventory
-
-- **Add Item**: `POST /api/inventory/add`
-    ```json
-    {
-        "name": "Item Name",
-        "sellPrice": 10.0,
-        "costAmount": 5.0,
-        "quantity": 100
-    }
-    ```
-
-- **Get Items**: `GET /api/inventory/`
-- **Update Item**: `PUT /api/inventory/update/:id`
-    ```json
-    {
-        "name": "Updated Item Name",
-        "sellPrice": 12.0,
-        "quantity": 150
-    }
-    ```
-
-- **Delete Item**: `DELETE /api/inventory/delete/:id`
-
-### Orders
-
-- **Create Order**: `POST /api/orders/create`
-    ```json
-    {
-        "items": [
-            {
-                "itemId": "60d5f60fd945c1a1e8e36513",
-                "quantity": 2
-            }
-        ],
-        "totalPrice": 20.0
-    }
-    ```
-
-- **Get Orders**: `GET /api/orders/`
-- **Update Order Status**: `PUT /api/orders/update/:id`
-    ```json
-    {
-        "status": "Processed"
-    }
-    ```
-
-### Users
-
-- **Register User**: `POST /api/users/register`
-    ```json
-    {
-        "username": "user1",
-        "password": "password123",
-        "pin": "1234",
-        "role": "waiter"
-    }
-    ```
-
-- **Get Users**: `GET /api/users/`
-- **Authenticate User**: `POST /api/users/authenticate`
-    ```json
-    {
-        "username": "user1",
-        "password": "password123"
-    }
-    ```
-
-- **Authenticate User by PIN**: `POST /api/users/authenticate/pin`
-    ```json
-    {
-        "username": "user1",
-        "pin": "1234"
-    }
-    ```
-
-## Deployment
-
-### DigitalOcean
-
-1. **Create a Droplet**:
-    - Go to the [DigitalOcean control panel](https://cloud.digitalocean.com/droplets).
-    - Click on "Create Droplet".
-    - Choose an image (e.g., Ubuntu 20.04).
-    - Choose a plan, data center region, and additional options as needed.
-    - Add your SSH key for secure access.
-    - Click "Create Droplet".
-
-2. **Connect to Your Droplet**:
-    ```bash
-    ssh root@your-droplet-ip
-    ```
-
-3. **Install Node.js and npm**:
-    ```bash
-    curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-    sudo apt-get install -y nodejs
-    ```
-
-4. **Clone the Repository on the Droplet**:
-    ```bash
-    git clone https://github.com/your-username/resto-bar-pos.git
-    cd resto-bar-pos
-    ```
-
-5. **Install Dependencies**:
-    ```bash
-    npm install
-    ```
-
-6. **Set Up Environment Variables**:
-    ```bash
-    nano .env
-    ```
-    Add your environment variables to the `.env` file:
-    ```env
-    MONGO_URI=your-mongodb-connection-string
-    PORT=5000
-    SECRET_KEY=your-secret-key
-    ```
-
-7. **Start the Application**:
-    ```bash
-    npm run start
-    ```
-
-### Docker
-
-1. Create a `.env` file with your environment variables.
-2. Reference the `.env` file in your `docker-compose.yml`:
-    ```yaml
-    version: '3.8'
-    services:
-      app:
-        image: your-app-image
-        env_file:
-          - .env
-    ```
-
-3. Start the Docker container:
-    ```bash
-    docker-compose up
-    ```
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request for any changes.
-
-## License
-
-This project is licensed under the MIT License.
+- **Node.js**: JavaScript runtime for building the backend.
+- **Express.js**: Web framework for building RESTful APIs.
+- **MongoDB**: NoSQL database for data storage.
+- **Mongoose**: ODM for MongoDB, handling data models and relationships.
+- **JWT**: JSON Web Tokens for authentication.
+- **bcrypt**: Password hashing for secure user authentication.
+- **Jest**: Testing framework for unit and integration tests.
