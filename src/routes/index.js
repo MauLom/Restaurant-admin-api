@@ -1,10 +1,10 @@
 const express = require('express');
-const userRoutes = require('./user.route');
-// Add other routes as needed
-
 const router = express.Router();
 
-router.use('/users', userRoutes);
-// Add other route prefixes here
+
+router.use('/users', require('./user.route'));
+router.use('/orders', require('./order.route'));
+router.use('/inventory', require('./inventory.route'));
+router.use('/reservations', require('./reservation.route'));
 
 module.exports = router;
