@@ -107,4 +107,65 @@ exports.getAllUsers = async (req, res) => {
     console.error('Error fetching users:', error.message);
     res.status(500).json({ error: 'Error fetching users' });
   }
+
+
+};
+exports.getUserSettings = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('settings');
+    res.json(user.settings);
+  } catch (error) {
+    console.error('Error fetching user settings:', error.message);
+    res.status(500).json({ error: 'Error fetching user settings' });
+  }
+};
+exports.updateUserSettings = async (req, res) => {
+  try {
+    const { notifications, darkMode } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { settings: { notifications, darkMode } },
+      { new: true }
+    );
+    res.json(user.settings);
+  } catch (error) {
+    console.error('Error updating user settings:', error.message);
+    res.status(500).json({ error: 'Error updating user settings' });
+  }
+};
+// Generate a new PIN for a user
+exports.generatePin = async (req, res) => {
+  try {
+    const { role, pin } = req.body;
+
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN is required' });
+    }
+
+    const pinExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+    const newUser = new User({
+      username: `user_${Math.random().toString(36).substr(2, 9)}`, // Temporary username
+      role,
+      pin,
+      pinExpiration,
+    });
+
+    await newUser.save();
+    res.status(201).json(newUser);
+  } catch (error) {
+    console.error('Error generating PIN:', error.message);
+    res.status(500).json({ error: 'Error generating PIN' });
+  }
+};
+
+// Get all users with PINs
+exports.getPins = async (req, res) => {
+  try {
+    const users = await User.find({ pin: { $exists: true } }).select('username role pin pinExpiration');
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching PINs:', error.message);
+    res.status(500).json({ error: 'Error fetching PINs' });
+  }
 };
