@@ -5,7 +5,7 @@ const PaymentLog = require('../models/PaymentLog.model');
 
 exports.createOrder = async (req, res) => {
   try {
-    const { tableId, items, preparationSection, physicalSection } = req.body;
+    const { tableId, items, preparationSection, physicalSection, waiterId } = req.body;
 
     // Calculate the total using the price of each item from the MenuItem collection
     let total = 0;
@@ -33,9 +33,10 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // Create a new order with the calculated total
+    // Create a new order with the calculated total and waiterId
     const newOrder = new Order({
       tableId,
+      waiterId, // Associate the order with the waiter
       items: orderItems,
       total,
       section: preparationSection,

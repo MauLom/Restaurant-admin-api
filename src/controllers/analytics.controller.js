@@ -112,15 +112,16 @@ exports.getWaiterTips = async (req, res) => {
       return res.status(400).json({ error: 'Invalid date range provided' });
     }
 
+    // Fetch orders with waiterId populated
     const orders = await Order.find({
       createdAt: { $gte: start, $lte: end },
       paid: true  // Only include paid orders
-    }).populate('waiterId', 'alias');
+    }).populate('waiterId', 'username alias'); // Populate the username and alias fields from User model
 
     const tipsByWaiter = {};
 
     orders.forEach(order => {
-      const waiter = order.waiterId.alias;
+      const waiter = order.waiterId.username || order.waiterId.alias; // Use alias or username
       if (!tipsByWaiter[waiter]) {
         tipsByWaiter[waiter] = 0;
       }
@@ -133,3 +134,4 @@ exports.getWaiterTips = async (req, res) => {
     res.status(500).json({ error: 'Error fetching waiter tips' });
   }
 };
+

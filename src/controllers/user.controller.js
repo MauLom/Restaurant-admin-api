@@ -133,19 +133,18 @@ exports.updateUserSettings = async (req, res) => {
     res.status(500).json({ error: 'Error updating user settings' });
   }
 };
-// Generate a new PIN for a user
 exports.generatePin = async (req, res) => {
   try {
-    const { role, pin } = req.body;
+    const { role, pin, username } = req.body;
 
-    if (!pin) {
-      return res.status(400).json({ error: 'PIN is required' });
+    if (!pin || !username) {
+      return res.status(400).json({ error: 'PIN and username are required' });
     }
 
     const pinExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
     const newUser = new User({
-      username: `user_${Math.random().toString(36).substr(2, 9)}`, // Temporary username
+      username,  // Use the provided username
       role,
       pin,
       pinExpiration,
@@ -158,6 +157,8 @@ exports.generatePin = async (req, res) => {
     res.status(500).json({ error: 'Error generating PIN' });
   }
 };
+
+
 
 // Get all users with PINs
 exports.getPins = async (req, res) => {
