@@ -8,6 +8,11 @@ const OrderSchema = new mongoose.Schema({
   },
   items: [
     {
+      itemId: {
+        type: mongoose.Schema.Types.ObjectId,  // Add itemId to store the MenuItem reference
+        ref: 'MenuItem',
+        required: true,  // Ensure itemId is always present
+      },
       name: String,
       quantity: Number,
       status: {
@@ -16,7 +21,8 @@ const OrderSchema = new mongoose.Schema({
         default: 'preparing',
       },
       price: Number,
-    },
+      area: String,  // Added this to reflect the area
+    }
   ],
   status: {
     type: String,

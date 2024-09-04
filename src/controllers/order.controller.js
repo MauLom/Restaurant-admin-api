@@ -1,5 +1,7 @@
 const Order = require('../models/Order.model');
 const MenuItem = require('../models/MenuItem.model');
+const MenuCategory = require('../models/MenuCategory.model');
+const PaymentLog = require('../models/PaymentLog.model');
 exports.createOrder = async (req, res) => {
   try {
     const { tableId, items, preparationSection, physicalSection } = req.body;
@@ -9,19 +11,24 @@ exports.createOrder = async (req, res) => {
     const orderItems = [];
 
     for (const item of items) {
-      const menuItem = await MenuItem.findById(item.itemId);
+      // Find the menu item and populate the category to access the area
+      const menuItem = await MenuItem.findById(item.itemId).populate('category');
       if (!menuItem) {
         return res.status(404).json({ error: `MenuItem with id ${item.itemId} not found` });
       }
 
+      // Get the area from the category
+      const itemArea = menuItem.category.area;
       const itemTotal = menuItem.price * item.quantity;
       total += itemTotal;
 
+      // Add the itemId explicitly in orderItems
       orderItems.push({
-        itemId: item.itemId,
+        itemId: menuItem._id,  // Ensure itemId is explicitly saved
         name: menuItem.name,
-        price: item.price,
+        price: menuItem.price,
         quantity: item.quantity,
+        area: itemArea,  // Add area to the order item
       });
     }
 
@@ -43,7 +50,6 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// Get all orders
 exports.getOrders = async (req, res) => {
   try {
     const { preparationSection } = req.query; // Optional: filter by preparation section
@@ -60,30 +66,51 @@ exports.getOrders = async (req, res) => {
     res.status(500).json({ error: 'Error fetching orders' });
   }
 };
-
-// Update order status
-exports.updateOrderStatus = async (req, res) => {
+exports.updateItemStatus = async (req, res) => {
   try {
-    const { orderId } = req.params;
-    const { status } = req.body;
+    const { orderId, itemId } = req.params; // Get both orderId and itemId from params
+    const { status } = req.body; // The new status of the item
 
-    const updatedOrder = await Order.findByIdAndUpdate(orderId, { status }, { new: true });
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
 
-    res.json(updatedOrder);
+    // Find the item in the order's items array and update its status
+    const item = order.items.find((item) => item.itemId.toString() === itemId);
+    if (!item) {
+      return res.status(404).json({ error: `Item with id ${itemId} not found in order` });
+    }
+
+    // Update the item's status
+    item.status = status;
+
+    // Check if all items in the order are marked as 'ready'
+    const allItemsReady = order.items.every((item) => item.status === 'ready');
+
+    // If all items are ready, mark the entire order as 'ready'
+    if (allItemsReady) {
+      order.status = 'ready';
+    } else {
+      order.status = 'preparing'; // If not all items are ready, keep the status as 'preparing'
+    }
+
+    await order.save(); // Save the order with the updated item status
+
+    res.json(order);
   } catch (error) {
-    console.error('Error updating order status:', error.message);
-    res.status(500).json({ error: 'Error updating order status' });
+    console.error('Error updating item status:', error.message);
+    res.status(500).json({ error: 'Error updating item status' });
   }
 };
 
-// Get all orders for a specific table that are ready for payment
 exports.getOrdersForPayment = async (req, res) => {
   try {
     const { tableId } = req.params;
 
     const orders = await Order.find({
       tableId,
-      status: 'delivered',
+      status: 'ready',
       paid: false,
     });
 
@@ -97,16 +124,14 @@ exports.getOrdersForPayment = async (req, res) => {
     res.status(500).json({ error: 'Error fetching orders for payment' });
   }
 };
-
-// Finalize payment for orders at a table
 exports.finalizePayment = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const { tip } = req.body;
+    const { tip, paymentMethods } = req.body;
 
     const orders = await Order.find({
       tableId,
-      status: 'delivered',
+      status: 'ready',
       paid: false,
     });
 
@@ -125,9 +150,48 @@ exports.finalizePayment = async (req, res) => {
 
     const grandTotal = total + tip;
 
+    // Log the payment process for further analysis, including payment methods
+    await PaymentLog.create({
+      tableId,
+      orders: orders.map(order => order._id),
+      total,
+      tip,
+      grandTotal,
+      paymentMethods, // Log the payment methods
+      timestamp: new Date(),
+    });
+
     res.json({ message: 'Payment completed', total, tip, grandTotal });
   } catch (error) {
     console.error('Error finalizing payment:', error.message);
     res.status(500).json({ error: 'Error finalizing payment' });
+  }
+};
+
+exports.getOrdersByArea = async (req, res) => {
+  try {
+    const { area } = req.query;
+
+    // Find menu items in the given area
+    const menuItems = await MenuItem.find().populate({
+      path: 'category',
+      match: { area: area },
+      select: 'area',
+    });
+
+    const matchingItemIds = menuItems
+      .filter((item) => item.category)
+      .map((item) => item._id);
+
+    // Find orders where the items match the menu items from the specified area
+    const orders = await Order.find({
+      'items.itemId': { $in: matchingItemIds },
+      status: { $ne: 'ready' },
+    });
+
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching orders by area:', error.message);
+    res.status(500).json({ error: 'Error fetching orders by area' });
   }
 };

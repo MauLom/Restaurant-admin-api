@@ -14,7 +14,7 @@ const MenuItemSchema = new mongoose.Schema({
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
+    ref: 'MenuCategory', // Update this line to match the model name
     required: true,
   },
 }, {

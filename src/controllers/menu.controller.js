@@ -1,12 +1,10 @@
-// src/controllers/menu.controller.js
 const MenuCategory = require('../models/MenuCategory.model');
 const MenuItem = require('../models/MenuItem.model');
 
-// Menu Category Controllers
 exports.createMenuCategory = async (req, res) => {
   try {
-    const { name } = req.body;
-    const newCategory = new MenuCategory({ name });
+    const { name, description, area } = req.body;
+    const newCategory = new MenuCategory({ name, description, area });
     await newCategory.save();
     res.status(201).json(newCategory);
   } catch (error) {
@@ -35,6 +33,10 @@ exports.createMenuItem = async (req, res) => {
     const { name, description, price, category } = req.body;
     const newItem = new MenuItem({ name, description, price, category });
     await newItem.save();
+
+    // Add the new item to the category
+    await MenuCategory.findByIdAndUpdate(category, { $push: { items: newItem._id } });
+
     res.status(201).json(newItem);
   } catch (error) {
     res.status(500).json({ error: 'Error creating menu item' });

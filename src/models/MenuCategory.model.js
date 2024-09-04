@@ -8,6 +8,11 @@ const CategorySchema = new mongoose.Schema({
   description: {
     type: String,
   },
+  area: {
+    type: String,
+    enum: ['kitchen', 'bar'],
+    required: true,
+  },
   items: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'MenuItem',
@@ -16,6 +21,6 @@ const CategorySchema = new mongoose.Schema({
   timestamps: true,
 });
 
-const Category = mongoose.model('Category', CategorySchema);
+const MenuCategory = mongoose.model('MenuCategory', CategorySchema);
 
-module.exports = Category;
+module.exports = MenuCategory;
