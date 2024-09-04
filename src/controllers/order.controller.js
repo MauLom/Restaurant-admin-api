@@ -2,6 +2,7 @@ const Order = require('../models/Order.model');
 const MenuItem = require('../models/MenuItem.model');
 const MenuCategory = require('../models/MenuCategory.model');
 const PaymentLog = require('../models/PaymentLog.model');
+
 exports.createOrder = async (req, res) => {
   try {
     const { tableId, items, preparationSection, physicalSection } = req.body;
@@ -49,7 +50,6 @@ exports.createOrder = async (req, res) => {
     res.status(500).json({ error: 'Error creating order' });
   }
 };
-
 exports.getOrders = async (req, res) => {
   try {
     const { preparationSection } = req.query; // Optional: filter by preparation section
@@ -103,7 +103,6 @@ exports.updateItemStatus = async (req, res) => {
     res.status(500).json({ error: 'Error updating item status' });
   }
 };
-
 exports.getOrdersForPayment = async (req, res) => {
   try {
     const { tableId } = req.params;
@@ -167,7 +166,6 @@ exports.finalizePayment = async (req, res) => {
     res.status(500).json({ error: 'Error finalizing payment' });
   }
 };
-
 exports.getOrdersByArea = async (req, res) => {
   try {
     const { area } = req.query;
@@ -193,5 +191,37 @@ exports.getOrdersByArea = async (req, res) => {
   } catch (error) {
     console.error('Error fetching orders by area:', error.message);
     res.status(500).json({ error: 'Error fetching orders by area' });
+  }
+};
+exports.getPopularItems = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    const orders = await Order.find({
+      createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
+      paid: true  // Only include paid orders
+    });
+
+    const itemStats = {};
+
+    // Count the number of times each item was ordered
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        if (!itemStats[item.itemId]) {
+          itemStats[item.itemId] = { name: item.name, quantity: 0 };
+        }
+        itemStats[item.itemId].quantity += item.quantity;
+      });
+    });
+
+    const popularItems = Object.values(itemStats).sort((a, b) => b.quantity - a.quantity);
+
+    res.json({
+      popularItems,
+      totalOrders: orders.length,
+    });
+  } catch (error) {
+    console.error('Error fetching popular items:', error);
+    res.status(500).json({ error: 'Error fetching popular items' });
   }
 };

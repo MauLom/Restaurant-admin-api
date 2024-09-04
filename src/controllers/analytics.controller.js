@@ -1,7 +1,6 @@
 const Order = require('../models/Order.model');
-const Inventory = require('../models/Inventory.model');
-
-// Get daily summary
+const User = require('../models/User.model');
+const PaymentLog = require('../models/PaymentLog.model')
 exports.getDailySummary = async (req, res) => {
   try {
     const today = new Date();
@@ -38,8 +37,6 @@ exports.getDailySummary = async (req, res) => {
     res.status(500).json({ error: 'Error fetching daily summary' });
   }
 };
-
-// Get popular items
 exports.getPopularItems = async (req, res) => {
   try {
     const popularItems = await Order.aggregate([
@@ -61,5 +58,78 @@ exports.getPopularItems = async (req, res) => {
   } catch (error) {
     console.error('Error fetching popular items:', error.message);
     res.status(500).json({ error: 'Error fetching popular items' });
+  }
+};
+exports.getSalesSummary = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Default to the last 24 hours if no date range is provided
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    // Validate if the date parsing was successful
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ error: 'Invalid date range provided' });
+    }
+
+    // Find payment logs within the date range
+    const paymentLogs = await PaymentLog.find({
+      timestamp: { $gte: start, $lte: end }
+    });
+
+    let totalRevenue = 0;
+    let totalTips = 0;
+    let grandTotal = 0;
+
+    paymentLogs.forEach(log => {
+      totalRevenue += log.total;
+      totalTips += log.tip;
+      grandTotal += log.grandTotal;
+    });
+
+    res.json({
+      totalRevenue,
+      totalTips,
+      grandTotal
+    });
+  } catch (error) {
+    console.error('Error fetching sales summary:', error);
+    res.status(500).json({ error: 'Error fetching sales summary' });
+  }
+};
+
+exports.getWaiterTips = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Default to the last 24 hours if no date range is provided
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    // Validate if the date parsing was successful
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ error: 'Invalid date range provided' });
+    }
+
+    const orders = await Order.find({
+      createdAt: { $gte: start, $lte: end },
+      paid: true  // Only include paid orders
+    }).populate('waiterId', 'alias');
+
+    const tipsByWaiter = {};
+
+    orders.forEach(order => {
+      const waiter = order.waiterId.alias;
+      if (!tipsByWaiter[waiter]) {
+        tipsByWaiter[waiter] = 0;
+      }
+      tipsByWaiter[waiter] += order.tip;
+    });
+
+    res.json(tipsByWaiter);
+  } catch (error) {
+    console.error('Error fetching waiter tips:', error);
+    res.status(500).json({ error: 'Error fetching waiter tips' });
   }
 };

@@ -6,10 +6,15 @@ const OrderSchema = new mongoose.Schema({
     ref: 'Table',
     required: true,
   },
+  waiterId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,  // Ensure that each order is linked to a waiter
+  },
   items: [
     {
       itemId: {
-        type: mongoose.Schema.Types.ObjectId,  // Add itemId to store the MenuItem reference
+        type: mongoose.Schema.Types.ObjectId,  // Reference to MenuItem
         ref: 'MenuItem',
         required: true,  // Ensure itemId is always present
       },
@@ -21,7 +26,7 @@ const OrderSchema = new mongoose.Schema({
         default: 'preparing',
       },
       price: Number,
-      area: String,  // Added this to reflect the area
+      area: String,  // Reflects kitchen/bar area
     }
   ],
   status: {
@@ -29,9 +34,7 @@ const OrderSchema = new mongoose.Schema({
     enum: ['preparing', 'ready', 'sent to cashier', 'delivered', 'paid'],
     default: 'preparing',
   },
-  section: {
-    type: String,
-  },
+  section: String,
   total: Number,
   tip: {
     type: Number,
@@ -44,6 +47,7 @@ const OrderSchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
+
 
 const Order = mongoose.model('Order', OrderSchema);
 
