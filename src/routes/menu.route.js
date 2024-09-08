@@ -9,7 +9,6 @@ const {
   createMenuItem,
   getMenuItems,
   deleteMenuItem,
-  getOrdersByArea
 } = require('../controllers/menu.controller');
 
 router.post('/categories', authMiddleware, createMenuCategory);
