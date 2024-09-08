@@ -1,54 +1,90 @@
 const Order = require('../models/Order.model');
 const MenuItem = require('../models/MenuItem.model');
-const MenuCategory = require('../models/MenuCategory.model');
 const PaymentLog = require('../models/PaymentLog.model');
-
+const { getIO } = require('../../websocket');
 exports.createOrder = async (req, res) => {
   try {
     const { tableId, items, preparationSection, physicalSection, waiterId } = req.body;
 
-    // Calculate the total using the price of each item from the MenuItem collection
     let total = 0;
     const orderItems = [];
 
     for (const item of items) {
-      // Find the menu item and populate the category to access the area
       const menuItem = await MenuItem.findById(item.itemId).populate('category');
       if (!menuItem) {
         return res.status(404).json({ error: `MenuItem with id ${item.itemId} not found` });
       }
 
-      // Get the area from the category
       const itemArea = menuItem.category.area;
       const itemTotal = menuItem.price * item.quantity;
       total += itemTotal;
 
-      // Add the itemId explicitly in orderItems
       orderItems.push({
-        itemId: menuItem._id,  // Ensure itemId is explicitly saved
+        itemId: menuItem._id,
         name: menuItem.name,
         price: menuItem.price,
         quantity: item.quantity,
-        area: itemArea,  // Add area to the order item
+        area: itemArea,
       });
     }
 
-    // Create a new order with the calculated total and waiterId
     const newOrder = new Order({
       tableId,
-      waiterId, // Associate the order with the waiter
+      waiterId,
       items: orderItems,
       total,
       section: preparationSection,
-      physicalSection, // Save the physical section as well
+      physicalSection,
     });
 
     await newOrder.save();
+
+    // Emit the new order event to all connected clients
+    const io = getIO();
+    io.emit('new-order', newOrder);  // Emit new order event
 
     res.status(201).json(newOrder);
   } catch (error) {
     console.error('Error creating order:', error.message);
     res.status(500).json({ error: 'Error creating order' });
+  }
+};
+
+exports.updateItemStatus = async (req, res) => {
+  try {
+    const { orderId, itemId } = req.params;
+    const { status } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const item = order.items.find((item) => item.itemId.toString() === itemId);
+    if (!item) {
+      return res.status(404).json({ error: `Item with id ${itemId} not found in order` });
+    }
+
+    item.status = status;
+
+    const allItemsReady = order.items.every((item) => item.status === 'ready');
+
+    if (allItemsReady) {
+      order.status = 'ready';
+    } else {
+      order.status = 'preparing';
+    }
+
+    await order.save();
+
+    // Emit the updated order event to all connected clients
+    const io = getIO();
+    io.emit('update-order', order);  // Emit order update event
+
+    res.json(order);
+  } catch (error) {
+    console.error('Error updating item status:', error.message);
+    res.status(500).json({ error: 'Error updating item status' });
   }
 };
 exports.getOrders = async (req, res) => {
@@ -65,43 +101,6 @@ exports.getOrders = async (req, res) => {
   } catch (error) {
     console.error('Error fetching orders:', error.message);
     res.status(500).json({ error: 'Error fetching orders' });
-  }
-};
-exports.updateItemStatus = async (req, res) => {
-  try {
-    const { orderId, itemId } = req.params; // Get both orderId and itemId from params
-    const { status } = req.body; // The new status of the item
-
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
-
-    // Find the item in the order's items array and update its status
-    const item = order.items.find((item) => item.itemId.toString() === itemId);
-    if (!item) {
-      return res.status(404).json({ error: `Item with id ${itemId} not found in order` });
-    }
-
-    // Update the item's status
-    item.status = status;
-
-    // Check if all items in the order are marked as 'ready'
-    const allItemsReady = order.items.every((item) => item.status === 'ready');
-
-    // If all items are ready, mark the entire order as 'ready'
-    if (allItemsReady) {
-      order.status = 'ready';
-    } else {
-      order.status = 'preparing'; // If not all items are ready, keep the status as 'preparing'
-    }
-
-    await order.save(); // Save the order with the updated item status
-
-    res.json(order);
-  } catch (error) {
-    console.error('Error updating item status:', error.message);
-    res.status(500).json({ error: 'Error updating item status' });
   }
 };
 exports.getOrdersForPayment = async (req, res) => {
