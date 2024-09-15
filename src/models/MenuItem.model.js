@@ -17,6 +17,9 @@ const MenuItemSchema = new mongoose.Schema({
     ref: 'MenuCategory', // Update this line to match the model name
     required: true,
   },
+  comments: {
+    type: [String],
+  }
 }, {
   timestamps: true,
 });

@@ -4,17 +4,17 @@ const PaymentLog = require('../models/PaymentLog.model');
 const { getIO } = require('../../websocket');
 exports.createOrder = async (req, res) => {
   try {
-    const { tableId, items, preparationSection, physicalSection, waiterId } = req.body;
-
+    const { tableId, items, preparationSection, physicalSection, waiterId, comment } = req.body;
+    
     let total = 0;
     const orderItems = [];
-
+    
     for (const item of items) {
       const menuItem = await MenuItem.findById(item.itemId).populate('category');
       if (!menuItem) {
         return res.status(404).json({ error: `MenuItem with id ${item.itemId} not found` });
       }
-
+      
       const itemArea = menuItem.category.area;
       const itemTotal = menuItem.price * item.quantity;
       total += itemTotal;
@@ -23,6 +23,7 @@ exports.createOrder = async (req, res) => {
         itemId: menuItem._id,
         name: menuItem.name,
         price: menuItem.price,
+        comments: item.comments.join('|'),
         quantity: item.quantity,
         area: itemArea,
       });
@@ -35,6 +36,7 @@ exports.createOrder = async (req, res) => {
       total,
       section: preparationSection,
       physicalSection,
+      comment: comment
     });
 
     await newOrder.save();
