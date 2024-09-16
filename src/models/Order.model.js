@@ -27,6 +27,7 @@ const OrderSchema = new mongoose.Schema({
       },
       price: Number,
       area: String,  // Reflects kitchen/bar area
+      comments: String,
     }
   ],
   status: {
@@ -36,6 +37,7 @@ const OrderSchema = new mongoose.Schema({
   },
   section: String,
   total: Number,
+  comment: String,
   tip: {
     type: Number,
     default: 0,
