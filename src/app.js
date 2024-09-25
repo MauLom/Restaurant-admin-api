@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const connectDB = require('./config/db'); 
 // const bot = require('./integrations/telegram/telegramBot'); 
 const routes = require('./routes');
+const socket = require('../websocket');
 const { errorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
@@ -18,7 +19,6 @@ app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
 app.use(bodyParser.json());
-
 // Initialize Telegram Bot
 try {
     // bot.launch();
@@ -32,6 +32,7 @@ try {
 
 // Routes
 app.use('/api', routes);
+
 
 // Error Handling Middleware
 app.use(errorHandler);

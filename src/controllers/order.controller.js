@@ -2,6 +2,7 @@ const Order = require('../models/Order.model');
 const MenuItem = require('../models/MenuItem.model');
 const PaymentLog = require('../models/PaymentLog.model');
 const { getIO } = require('../../websocket');
+
 exports.createOrder = async (req, res) => {
   try {
     const { tableId, items, preparationSection, physicalSection, waiterId, comment } = req.body;
@@ -41,10 +42,10 @@ exports.createOrder = async (req, res) => {
 
     await newOrder.save();
 
-    // Emit the new order event to all connected clients
+    console.log("antes de emitir")
     const io = getIO();
-    io.emit('new-order', newOrder);  // Emit new order event
-
+    io.emit('new-order', newOrder);  
+    console.log("despues de emitir")
     res.status(201).json(newOrder);
   } catch (error) {
     console.error('Error creating order:', error.message);
