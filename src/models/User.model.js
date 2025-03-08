@@ -14,10 +14,13 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  role: {
-    type: String,
-    enum: ['admin', 'waiter', 'hostess', 'cashier', 'kitchen', 'bar'],
-    required: false,
+  roleId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role', 
+  },
+  groupId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Group', 
   },
   pin: {
     type: String,
