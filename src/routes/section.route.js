@@ -20,10 +20,4 @@ router.get('/:id', authMiddleware, getSectionById);
 router.put('/:id', authMiddleware, updateSection);
 router.delete('/:id', authMiddleware, deleteSection);
 
-// Table-related routes
-router.post('/:id/tables', authMiddleware, addTableToSection);
-router.delete('/:sectionId/tables/:tableId', authMiddleware, deleteTableFromSection);
-router.put('/tables/:tableId', authMiddleware, updateTableInSection);
-router.get('/:id/tables', authMiddleware, getSectionTables); // New route to fetch tables by section
-
 module.exports = router;

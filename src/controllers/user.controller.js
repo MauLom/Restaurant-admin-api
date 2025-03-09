@@ -8,12 +8,10 @@ exports.createUser = async (req, res) => {
   try {
     const { username, password, role, pin, pinExpiration } = req.body;
 
-    // Validate that the pin is provided
     if (!pin) {
       return res.status(400).json({ error: 'Pin is required' });
     }
 
-    // Optional: Hash the password only if provided
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
 
     const newUser = new User({

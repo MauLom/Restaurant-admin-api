@@ -44,8 +44,18 @@ exports.createMenuItem = async (req, res) => {
 };
 exports.getMenuItems = async (req, res) => {
   try {
-    const { category } = req.query;
-    const query = category ? { category } : {};
+    const { category, categoryName } = req.query;
+    let query = {};
+    if (category) {
+      query = { category };
+    } else if (categoryName) {
+      const categoryDoc = await MenuCategory.findOne({ name: categoryName });
+      if (categoryDoc) {
+        query = { category: categoryDoc._id };
+      } else {
+        return res.json([]);
+      }
+    }
     const items = await MenuItem.find(query).populate('category');
     res.json(items);
   } catch (error) {

@@ -24,7 +24,8 @@ exports.createOrder = async (req, res) => {
         itemId: menuItem._id,
         name: menuItem.name,
         price: menuItem.price,
-        comments: item.comments.join('|'),
+        // Se elimina el join, ya que item.comments ya es un string (o puede serlo)
+        comments: item.comments,
         quantity: item.quantity,
         area: itemArea,
       });
@@ -42,10 +43,10 @@ exports.createOrder = async (req, res) => {
 
     await newOrder.save();
 
-    console.log("antes de emitir")
+    console.log("antes de emitir");
     const io = getIO();
-    io.emit('new-order', newOrder);  
-    console.log("despues de emitir")
+    io.emit('new-order', newOrder);
+    console.log("despues de emitir");
     res.status(201).json(newOrder);
   } catch (error) {
     console.error('Error creating order:', error.message);
