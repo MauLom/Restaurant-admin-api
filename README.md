@@ -1,8 +1,8 @@
-# Restaurant Management Backend
+# 🍽️ Restaurant Management Backend
 
 ## Overview
 
-This project is a backend API for managing a restaurant's operations, including user management, orders, inventory, reservations, and more. It is designed to handle various roles within a restaurant such as admin, waiters, hostesses, and kitchen staff, providing functionalities for real-time updates, inventory management, order processing, and reservations.
+This project is a backend API for managing a restaurant's operations, including user management, orders, payments, inventory, and real-time analytics. It supports multiple user roles such as admin, waiters, kitchen staff, and cashiers, providing clear role-based access and operations tailored to daily restaurant workflows.
 
 ## Table of Contents
 
@@ -14,26 +14,46 @@ This project is a backend API for managing a restaurant's operations, including 
   - [User Management](#user-management)
   - [Orders](#orders)
   - [Inventory](#inventory)
-  - [Reservations](#reservations)
+  - [Payments](#payments)
+  - [Analytics](#analytics)
+  - [Settings](#settings)
 - [Testing](#testing)
 - [Project Structure](#project-structure)
 - [Future Enhancements](#future-enhancements)
 
 ## Features
 
-- **User Management**: Role-based authentication and authorization with PIN-based login.
-- **Order Management**: Create, update, and manage orders, with table status integration.
-- **Inventory Management**: Add, retrieve, and delete inventory items.
-- **Reservation Management**: Create and manage reservations with real-time table status updates.
-- **Role-Based Access Control**: Fine-grained control over who can access and modify data based on roles (admin, waiter, hostess, etc.).
-- **Real-Time Updates**: Planned integration for real-time notifications and updates using WebSockets or similar technology.
+### 👨‍🍳 Waiters
+- Open tables by specifying the number of guests and comments.
+- Create **multiple orders** per table.
+- Add notes per item.
+- Automatically see unavailable or low-stock items in real-time.
+- View **daily summaries**: sales, tips, orders, and guests per table.
+- Select date to review past performance.
+
+### 🧑‍🍳 Kitchen & Bar
+- (Planned) View pending items per area.
+- (Planned) Mark items as "ready to serve".
+- (Planned) Monitor item performance and output summaries.
+
+### 💳 Cashiers
+- See orders marked "ready" for payment.
+- Add tips and choose multiple payment methods per table.
+- Validate that payment totals match order values.
+
+### 🧑‍💼 Administrators
+- View system-wide analytics (sales, tips, top items).
+- See historical tips grouped by waiter.
+- Configure business rules (e.g. low stock threshold).
+- (Planned) Manage menus, roles, permissions, and global settings.
 
 ## Technologies Used
 
-- **Node.js**: JavaScript runtime for building the backend.
-- **Express.js**: Web framework for building RESTful APIs.
-- **MongoDB**: NoSQL database for data storage.
-- **Mongoose**: ODM for MongoDB, handling data models and relationships.
-- **JWT**: JSON Web Tokens for authentication.
-- **bcrypt**: Password hashing for secure user authentication.
-- **Jest**: Testing framework for unit and integration tests.
+- **Node.js** – Runtime for server-side JavaScript
+- **Express.js** – Web framework for building APIs
+- **MongoDB** – Document-oriented database
+- **Mongoose** – ODM to manage schemas and models
+- **JWT** – Secure token-based authentication
+- **WebSocket** – Real-time communication for order updates
+- **Jest** – Testing framework
+- **bcrypt** – Password hashing
