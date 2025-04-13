@@ -10,4 +10,5 @@ router.use('/sections', require('./section.route'));
 router.use('/tables', require('./table.route'));
 router.use('/analytics', require('./analytics.route'));
 router.use('/menu', require('./menu.route'));
+router.use('/settings', require('./settings.route'));
 module.exports = router;
