@@ -4,6 +4,8 @@
 
 This project is a backend API for managing a restaurant's operations, including user management, orders, payments, inventory, and real-time analytics. It supports multiple user roles such as admin, waiters, kitchen staff, and cashiers, providing clear role-based access and operations tailored to daily restaurant workflows.
 
+---
+
 ## Table of Contents
 
 - [Features](#features)
@@ -20,6 +22,8 @@ This project is a backend API for managing a restaurant's operations, including 
 - [Testing](#testing)
 - [Project Structure](#project-structure)
 - [Future Enhancements](#future-enhancements)
+
+---
 
 ## Features
 
@@ -47,6 +51,8 @@ This project is a backend API for managing a restaurant's operations, including 
 - Configure business rules (e.g. low stock threshold).
 - (Planned) Manage menus, roles, permissions, and global settings.
 
+---
+
 ## Technologies Used
 
 - **Node.js** – Runtime for server-side JavaScript
@@ -57,3 +63,104 @@ This project is a backend API for managing a restaurant's operations, including 
 - **WebSocket** – Real-time communication for order updates
 - **Jest** – Testing framework
 - **bcrypt** – Password hashing
+
+---
+
+## Setup and Installation
+
+```bash
+# Clone the repository
+$ git clone https://github.com/MauLom/Restaurant-admin-api.git
+$ cd Restaurant-admin-api
+
+# Install dependencies
+$ npm install
+
+# Run the development server
+$ npm run dev
+
+# Run tests
+$ npm run test
+```
+
+---
+
+## Environment Variables
+
+Create a `.env` file in the root directory with the following:
+
+```env
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/your_database_name
+JWT_SECRET=your_jwt_secret_here
+```
+
+> ⚠️ Replace the example values with your actual configuration. Never commit real secrets or credentials.
+
+---
+
+## API Endpoints
+
+### User Management
+- `POST /auth/login`
+- `GET /users/`
+- `POST /users/`
+
+### Orders
+- `POST /orders/`
+- `GET /orders/?tableId=xyz`
+- `PUT /orders/:orderId/items/:itemId`
+- `GET /orders/payment/:tableId`
+- `POST /orders/payment/:tableId`
+- `GET /orders/area?area=bar`
+
+### Inventory
+- `GET /inventory`
+- `POST /inventory`
+- `DELETE /inventory/:id`
+
+### Payments
+- Included in orders and payment logs
+
+### Analytics
+- `GET /analytics/waiter-daily-summary`
+- `GET /analytics/waiter-tips`
+- `GET /analytics/sales-summary`
+- `GET /analytics/popular-items`
+
+### Settings
+- `GET /settings/:key`
+
+---
+
+## Testing
+
+Uses [Jest](https://jestjs.io/) for backend testing. Example:
+```bash
+npm run test
+```
+
+---
+
+## Project Structure
+
+```bash
+src/
+├── controllers/
+├── models/
+├── routes/
+├── middlewares/
+├── services/
+├── websocket/
+└── index.js
+```
+
+---
+
+## Future Enhancements
+
+- Admin UI for settings management
+- Kitchen/bar live order screens
+- Offline-first PWA support
+- Enhanced analytics by time range and staff performance
+
