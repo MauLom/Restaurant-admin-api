@@ -46,6 +46,11 @@ const OrderSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  numberOfGuests: {
+    type: Number,
+    required: false,
+  },
+
 }, {
   timestamps: true,
 });

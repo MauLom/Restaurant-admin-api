@@ -5,17 +5,18 @@ const { getIO } = require('../../websocket');
 
 exports.createOrder = async (req, res) => {
   try {
-    const { tableId, items, preparationSection, physicalSection, waiterId, comment } = req.body;
-    
+    const { tableId, items, preparationSection, physicalSection, waiterId, comment, numberOfGuests } = req.body;
+
     let total = 0;
     const orderItems = [];
-    
+
+  
     for (const item of items) {
       const menuItem = await MenuItem.findById(item.itemId).populate('category');
       if (!menuItem) {
         return res.status(404).json({ error: `MenuItem with id ${item.itemId} not found` });
       }
-      
+
       const itemArea = menuItem.category.area;
       const itemTotal = menuItem.price * item.quantity;
       total += itemTotal;
@@ -24,7 +25,6 @@ exports.createOrder = async (req, res) => {
         itemId: menuItem._id,
         name: menuItem.name,
         price: menuItem.price,
-        // Se elimina el join, ya que item.comments ya es un string (o puede serlo)
         comments: item.comments,
         quantity: item.quantity,
         area: itemArea,
@@ -38,22 +38,23 @@ exports.createOrder = async (req, res) => {
       total,
       section: preparationSection,
       physicalSection,
-      comment: comment
+      comment: comment,
+      numberOfGuests: numberOfGuests,
     });
-
     await newOrder.save();
-
-    console.log("antes de emitir");
+    // Update table status to "occupied"
+    const table = await Table.findById(tableId);
+    if (table) {
+      table.status = 'occupied';
+      await table.save();
+    }
     const io = getIO();
     io.emit('new-order', newOrder);
-    console.log("despues de emitir");
     res.status(201).json(newOrder);
   } catch (error) {
-    console.error('Error creating order:', error.message);
     res.status(500).json({ error: 'Error creating order' });
   }
 };
-
 exports.updateItemStatus = async (req, res) => {
   try {
     const { orderId, itemId } = req.params;
@@ -162,6 +163,7 @@ exports.finalizePayment = async (req, res) => {
       grandTotal,
       paymentMethods, // Log the payment methods
       timestamp: new Date(),
+      
     });
 
     res.json({ message: 'Payment completed', total, tip, grandTotal });
@@ -229,3 +231,35 @@ exports.getPopularItems = async (req, res) => {
     res.status(500).json({ error: 'Error fetching popular items' });
   }
 };
+exports.paySingleOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { tip = 0, paymentMethods } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order || order.paid || order.status !== 'ready') {
+      return res.status(400).json({ error: 'Orden no válida para pago' });
+    }
+
+    order.paid = true;
+    order.tip = tip;
+    order.status = 'paid';
+    await order.save();
+
+    await PaymentLog.create({
+      tableId: order.tableId,
+      orders: [order._id],
+      total: order.total,
+      tip,
+      grandTotal: order.total + tip,
+      paymentMethods,
+      timestamp: new Date(),
+    });
+
+    res.json({ message: 'Orden pagada correctamente', total: order.total, tip });
+  } catch (error) {
+    console.error('Error al pagar la orden individual:', error.message);
+    res.status(500).json({ error: 'Error al procesar el pago individual' });
+  }
+};
+
