@@ -161,7 +161,8 @@ exports.finalizePayment = async (req, res) => {
       total,
       tip,
       grandTotal,
-      paymentMethods, // Log the payment methods
+      paymentMethods, 
+      waiterId: orders[0].waiterId,
       timestamp: new Date(),
       
     });
@@ -253,6 +254,7 @@ exports.paySingleOrder = async (req, res) => {
       tip,
       grandTotal: order.total + tip,
       paymentMethods,
+      waiterId: order.waiterId,
       timestamp: new Date(),
     });
 
