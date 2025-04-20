@@ -1,5 +1,5 @@
 const Section = require('../models/Section.model');
-
+const Table = require('../models/Table.model');
 exports.getAllSections = async (req, res) => {
   try {
     const sections = await Section.find().populate('tables');

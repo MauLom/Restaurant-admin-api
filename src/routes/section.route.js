@@ -17,6 +17,7 @@ const router = express.Router();
 router.get('/', authMiddleware, getAllSections);
 router.post('/', authMiddleware, createSection);
 router.get('/:id', authMiddleware, getSectionById);
+router.post('/:id/tables', authMiddleware, addTableToSection);
 router.put('/:id', authMiddleware, updateSection);
 router.delete('/:id', authMiddleware, deleteSection);
 

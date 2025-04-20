@@ -1,20 +1,21 @@
 const Order = require('../models/Order.model');
 const MenuItem = require('../models/MenuItem.model');
 const PaymentLog = require('../models/PaymentLog.model');
+const Table = require('../models/Table.model');
 const { getIO } = require('../../websocket');
 
 exports.createOrder = async (req, res) => {
   try {
     const { tableId, items, preparationSection, physicalSection, waiterId, comment, numberOfGuests } = req.body;
-
     let total = 0;
     const orderItems = [];
-
-  
     for (const item of items) {
       const menuItem = await MenuItem.findById(item.itemId).populate('category');
       if (!menuItem) {
         return res.status(404).json({ error: `MenuItem with id ${item.itemId} not found` });
+      }
+      if (!menuItem.category || !menuItem.category.area) {
+        return res.status(400).json({ error: `Category missing or invalid for item ${menuItem.name}` });
       }
 
       const itemArea = menuItem.category.area;
@@ -52,7 +53,7 @@ exports.createOrder = async (req, res) => {
     io.emit('new-order', newOrder);
     res.status(201).json(newOrder);
   } catch (error) {
-    res.status(500).json({ error: 'Error creating order' });
+    res.status(500).json({ error: 'Error creating order', details: error.message });
   }
 };
 exports.updateItemStatus = async (req, res) => {
@@ -161,10 +162,10 @@ exports.finalizePayment = async (req, res) => {
       total,
       tip,
       grandTotal,
-      paymentMethods, 
+      paymentMethods,
       waiterId: orders[0].waiterId,
       timestamp: new Date(),
-      
+
     });
 
     res.json({ message: 'Payment completed', total, tip, grandTotal });
@@ -262,6 +263,57 @@ exports.paySingleOrder = async (req, res) => {
   } catch (error) {
     console.error('Error al pagar la orden individual:', error.message);
     res.status(500).json({ error: 'Error al procesar el pago individual' });
+  }
+};
+exports.sendOrderToCashier = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.status === 'paid') {
+      return res.status(400).json({ error: 'Cannot send a paid order to cashier' });
+    }
+
+    order.status = 'sent to cashier';
+    await order.save();
+
+    const io = getIO();
+    io.emit('order-sent-to-cashier', order);
+
+    res.json({ message: 'Order sent to cashier successfully', order });
+  } catch (error) {
+    console.error('Error sending order to cashier:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+exports.sendAllOrdersToCashier = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const orders = await Order.find({ tableId, paid: false, status: { $ne: 'sent to cashier' } });
+
+    if (!orders.length) {
+      return res.status(404).json({ error: 'No eligible orders to send to cashier' });
+    }
+
+    const updatedOrders = [];
+
+    for (const order of orders) {
+      order.status = 'sent to cashier';
+      await order.save();
+      updatedOrders.push(order);
+    }
+
+    const io = getIO();
+    io.emit('orders-sent-to-cashier', updatedOrders);
+
+    res.json({ message: 'All orders sent to cashier', orders: updatedOrders });
+  } catch (error) {
+    console.error('Error sending all orders to cashier:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
