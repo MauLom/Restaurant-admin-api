@@ -24,6 +24,10 @@ const TableSessionSchema = new mongoose.Schema({
     enum: ['open', 'ready_for_payment', 'closed'],
     default: 'open',
   },
+  closedAt: {
+    type: Date,
+  },
+
 }, { timestamps: true });
 
 const TableSession = mongoose.model('TableSession', TableSessionSchema);

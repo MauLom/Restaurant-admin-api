@@ -16,6 +16,7 @@ router.get('/:sessionId', authMiddleware, tableSessionController.getSessionWithO
 router.put('/:sessionId/mark-ready', authMiddleware, tableSessionController.markSessionReadyForPayment);
 
 // Cerrar sesión de mesa
-router.put('/:sessionId/close', authMiddleware, tableSessionController.closeSession);
+router.put('/:sessionId/close', authMiddleware, tableSessionController.closeTableSession);
 
+router.put('/close-by-table/:tableId', authMiddleware, tableSessionController.closeSessionByTableId);
 module.exports = router;
