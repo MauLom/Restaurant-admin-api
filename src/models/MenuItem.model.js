@@ -8,17 +8,36 @@ const MenuItemSchema = new mongoose.Schema({
   description: {
     type: String,
   },
+  ingredients: [
+    {
+      inventoryItem: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Inventory',
+        required: true,
+      },
+      quantity: {
+        type: Number,
+        required: true,
+      },
+      unit: {
+        type: String,
+        enum: ['ml', 'l', 'g', 'kg', 'unit'], // unidad usada en la receta
+        required: true,
+      }
+    }
+  ],
   price: {
     type: Number,
     required: true,
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MenuCategory', // Update this line to match the model name
+    ref: 'MenuCategory',
     required: true,
   },
   comments: {
     type: [String],
+    default: [],
   }
 }, {
   timestamps: true,

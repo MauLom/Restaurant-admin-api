@@ -11,6 +11,7 @@ exports.createMenuCategory = async (req, res) => {
     res.status(500).json({ error: 'Error creating menu category' });
   }
 };
+
 exports.getMenuCategories = async (req, res) => {
   try {
     const categories = await MenuCategory.find();
@@ -19,6 +20,7 @@ exports.getMenuCategories = async (req, res) => {
     res.status(500).json({ error: 'Error fetching menu categories' });
   }
 };
+
 exports.deleteMenuCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
@@ -28,13 +30,29 @@ exports.deleteMenuCategory = async (req, res) => {
     res.status(500).json({ error: 'Error deleting menu category' });
   }
 };
+
 exports.createMenuItem = async (req, res) => {
   try {
-    const { name, description, price, category } = req.body;
-    const newItem = new MenuItem({ name, description, price, category });
+    const {
+      name,
+      description,
+      price,
+      category,
+      comments = [],
+      ingredients = []
+    } = req.body;
+
+    const newItem = new MenuItem({
+      name,
+      description,
+      price,
+      category,
+      comments,
+      ingredients
+    });
+
     await newItem.save();
 
-    // Add the new item to the category
     await MenuCategory.findByIdAndUpdate(category, { $push: { items: newItem._id } });
 
     res.status(201).json(newItem);
@@ -42,6 +60,42 @@ exports.createMenuItem = async (req, res) => {
     res.status(500).json({ error: 'Error creating menu item' });
   }
 };
+
+exports.updateMenuItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const {
+      name,
+      description,
+      price,
+      category,
+      comments,
+      ingredients
+    } = req.body;
+
+    const updatedItem = await MenuItem.findByIdAndUpdate(
+      itemId,
+      {
+        ...(name !== undefined && { name }),
+        ...(description !== undefined && { description }),
+        ...(price !== undefined && { price }),
+        ...(category !== undefined && { category }),
+        ...(comments !== undefined && { comments }),
+        ...(ingredients !== undefined && { ingredients })
+      },
+      { new: true }
+    );
+
+    if (!updatedItem) {
+      return res.status(404).json({ error: 'Menu item not found' });
+    }
+
+    res.json(updatedItem);
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating menu item' });
+  }
+};
+
 exports.getMenuItems = async (req, res) => {
   try {
     const { category, categoryName } = req.query;
@@ -56,13 +110,17 @@ exports.getMenuItems = async (req, res) => {
         return res.json([]);
       }
     }
-    const items = await MenuItem.find(query).populate('category');
+    const items = await MenuItem.find(query)
+      .populate('category')
+      .populate('ingredients.inventoryItem');
+
     res.json(items);
   } catch (error) {
     console.error('Error fetching menu items:', error.message);
     res.status(500).json({ error: 'Error fetching menu items' });
   }
 };
+
 exports.deleteMenuItem = async (req, res) => {
   try {
     const { itemId } = req.params;
