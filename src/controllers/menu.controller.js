@@ -57,6 +57,7 @@ exports.createMenuItem = async (req, res) => {
 
     res.status(201).json(newItem);
   } catch (error) {
+    console.log('Error creating menu item:', error.message);
     res.status(500).json({ error: 'Error creating menu item' });
   }
 };

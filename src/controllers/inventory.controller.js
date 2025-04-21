@@ -17,7 +17,6 @@ exports.addInventoryItem = async (req, res) => {
       unit,
       equivalentMl = 0,
       equivalentGr = 0,
-      price,
       cost = 0,
       tags = [],
       preparationInstructions = ''
@@ -29,7 +28,6 @@ exports.addInventoryItem = async (req, res) => {
       unit,
       equivalentMl,
       equivalentGr,
-      price,
       cost,
       tags,
       preparationInstructions

@@ -22,10 +22,6 @@ const InventorySchema = new mongoose.Schema({
     type: Number,
     default: 0, // solo si se usa "unit" para sólidos
   },
-  price: {
-    type: Number,
-    required: true,
-  },
   cost: {
     type: Number,
     required: false,
