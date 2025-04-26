@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const PaymentMethodSchema = new mongoose.Schema({
-  method: { type: String, required: true },  // e.g., 'card', 'cash'
-  amount: { type: Number, required: true }   // e.g., amount paid using this method
+  method: { type: String, required: true },  
+  amount: { type: Number, required: true }   
 });
 
 const PaymentLogSchema = new mongoose.Schema({
@@ -12,7 +12,7 @@ const PaymentLogSchema = new mongoose.Schema({
   tip: { type: Number, required: true },
   grandTotal: { type: Number, required: true },
   timestamp: { type: Date, default: Date.now },
-  paymentMethods: [PaymentMethodSchema] // Now this stores an array of payment methods
+  paymentMethods: [PaymentMethodSchema] 
 });
 
 const PaymentLog = mongoose.model('PaymentLog', PaymentLogSchema);
