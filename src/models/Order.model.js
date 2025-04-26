@@ -6,17 +6,22 @@ const OrderSchema = new mongoose.Schema({
     ref: 'Table',
     required: true,
   },
+  tableSessionId: { 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TableSession',
+    required: true,
+  },
   waiterId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,  // Ensure that each order is linked to a waiter
+    required: true,
   },
   items: [
     {
       itemId: {
-        type: mongoose.Schema.Types.ObjectId,  // Reference to MenuItem
+        type: mongoose.Schema.Types.ObjectId,  
         ref: 'MenuItem',
-        required: true,  // Ensure itemId is always present
+        required: true,  
       },
       name: String,
       quantity: Number,
@@ -26,7 +31,7 @@ const OrderSchema = new mongoose.Schema({
         default: 'preparing',
       },
       price: Number,
-      area: String,  // Reflects kitchen/bar area
+      area: String,  
       comments: String,
     }
   ],
@@ -46,16 +51,14 @@ const OrderSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  numberOfGuests: {
-    type: Number,
-    required: false,
-  },
-
+  numberOfGuests: Number,
 }, {
   timestamps: true,
 });
 
-
 const Order = mongoose.model('Order', OrderSchema);
 
 module.exports = Order;
+
+
+ 

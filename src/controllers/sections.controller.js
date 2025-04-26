@@ -1,9 +1,42 @@
 const Section = require('../models/Section.model');
 const Table = require('../models/Table.model');
+const TableSession = require('../models/TableSession.model');
+
 exports.getAllSections = async (req, res) => {
   try {
     const sections = await Section.find().populate('tables');
-    res.json(sections);
+
+    const tableIds = sections.flatMap(section => section.tables.map(table => table._id));
+
+    const activeSessions = await TableSession.find({
+      tableId: { $in: tableIds },
+      status: 'open'
+    });
+
+    const sessionMap = {};
+    activeSessions.forEach(session => {
+      sessionMap[session.tableId.toString()] = session; 
+    });
+
+    const enrichedSections = sections.map(section => ({
+      ...section.toObject(),
+      tables: section.tables.map(table => {
+        const session = sessionMap[table._id.toString()];
+        return {
+          ...table.toObject(),
+          tableSessionId: session ? session._id : null,
+          currentSession: session ? {
+            waiterId: session.waiterId,
+            numberOfGuests: session.numberOfGuests,
+            comment: session.comment,
+            status: session.status,
+          } : null,
+        };
+      }),
+    }));
+
+    res.json(enrichedSections);
+
   } catch (error) {
     console.error('Error fetching sections:', error.message);
     res.status(500).json({ error: 'Error fetching sections' });

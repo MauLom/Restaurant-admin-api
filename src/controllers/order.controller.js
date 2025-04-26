@@ -6,9 +6,10 @@ const { getIO } = require('../../websocket');
 
 exports.createOrder = async (req, res) => {
   try {
-    const { tableId, items, preparationSection, physicalSection, waiterId, comment, numberOfGuests } = req.body;
+    const { tableId, tableSessionId, items, preparationSection, physicalSection, waiterId, comment, numberOfGuests } = req.body;
     let total = 0;
     const orderItems = [];
+
     for (const item of items) {
       const menuItem = await MenuItem.findById(item.itemId).populate('category');
       if (!menuItem) {
@@ -34,6 +35,7 @@ exports.createOrder = async (req, res) => {
 
     const newOrder = new Order({
       tableId,
+      tableSessionId, // aquí lo asignamos
       waiterId,
       items: orderItems,
       total,
@@ -43,14 +45,16 @@ exports.createOrder = async (req, res) => {
       numberOfGuests: numberOfGuests,
     });
     await newOrder.save();
-    // Update table status to "occupied"
+
     const table = await Table.findById(tableId);
     if (table) {
       table.status = 'occupied';
       await table.save();
     }
+
     const io = getIO();
     io.emit('new-order', newOrder);
+
     res.status(201).json(newOrder);
   } catch (error) {
     res.status(500).json({ error: 'Error creating order', details: error.message });
@@ -95,11 +99,19 @@ exports.updateItemStatus = async (req, res) => {
 };
 exports.getOrders = async (req, res) => {
   try {
-    const { preparationSection } = req.query; // Optional: filter by preparation section
+    const { preparationSection, tableId, tableSessionId } = req.query;
     const query = {};
 
     if (preparationSection) {
       query.section = preparationSection;
+    }
+
+    if (tableId) {
+      query.tableId = tableId;
+    }
+
+    if (tableSessionId) {
+      query.tableSessionId = tableSessionId;
     }
 
     const orders = await Order.find(query).populate('tableId', 'number status');
@@ -316,4 +328,5 @@ exports.sendAllOrdersToCashier = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
