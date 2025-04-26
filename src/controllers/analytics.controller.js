@@ -106,8 +106,12 @@ exports.getSalesSummary = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 
-    const start = startDate ? new Date(startDate) : new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const end = endDate ? new Date(endDate) : new Date();
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'Start date and end date are required.' });
+    }
+
+    const start = new Date(startDate + 'T00:00:00Z');
+    const end = new Date(endDate + 'T23:59:59Z');
 
     if (isNaN(start) || isNaN(end)) {
       return res.status(400).json({ error: 'Invalid date range provided' });
@@ -127,13 +131,17 @@ exports.getSalesSummary = async (req, res) => {
       grandTotal += log.grandTotal;
     });
 
+    console.log('Total Revenue:', totalRevenue);
+    console.log('Total Tips:', totalTips);
+    console.log('Grand Total:', grandTotal);
+
     res.json({
       totalRevenue,
       totalTips,
       grandTotal
     });
+
   } catch (error) {
-    console.error('Error fetching sales summary:', error);
     res.status(500).json({ error: 'Error fetching sales summary' });
   }
 };
