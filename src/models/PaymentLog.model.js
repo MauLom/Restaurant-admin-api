@@ -12,7 +12,9 @@ const PaymentLogSchema = new mongoose.Schema({
   tip: { type: Number, required: true },
   grandTotal: { type: Number, required: true },
   timestamp: { type: Date, default: Date.now },
-  paymentMethods: [PaymentMethodSchema] 
+  paymentMethods: [PaymentMethodSchema],
+  waiterId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  isPartial: { type: Boolean, default: false },
 });
 
 const PaymentLog = mongoose.model('PaymentLog', PaymentLogSchema);

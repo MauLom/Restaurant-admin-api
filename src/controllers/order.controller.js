@@ -328,5 +328,61 @@ exports.sendAllOrdersToCashier = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+exports.partialPayOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { itemsToPay, paymentMethods, tip = 0 } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Orden no encontrada' });
+    }
+
+    const itemsNotFound = itemsToPay.filter(itemId =>
+      !order.items.some(item => item.itemId.toString() === itemId && !item.paid)
+    );
+    if (itemsNotFound.length > 0) {
+      return res.status(400).json({ error: 'Algunos ítems ya fueron pagados o no existen.' });
+    }
+
+    for (const item of order.items) {
+      if (itemsToPay.includes(item.itemId.toString())) {
+        item.paid = true;
+      }
+    }
+
+    const allItemsPaid = order.items.every(item => item.paid);
+    if (allItemsPaid) {
+      order.paid = true;
+      order.status = 'paid';
+    }
+
+    await order.save();
+
+    const partialTotal = order.items
+      .filter(item => itemsToPay.includes(item.itemId.toString()))
+      .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    const grandTotal = partialTotal + tip;
+
+    await PaymentLog.create({
+      tableId: order.tableId,
+      orders: [order._id],
+      total: partialTotal,
+      tip,
+      grandTotal,
+      paymentMethods,
+      waiterId: order.waiterId,
+      timestamp: new Date(),
+      isPartial: true,
+    });
+
+    res.json({ message: 'Pago parcial procesado exitosamente', total: partialTotal, tip, grandTotal });
+  } catch (error) {
+    console.error('Error procesando pago parcial:', error.message);
+    res.status(500).json({ error: 'Error procesando el pago parcial' });
+  }
+};
+
 
 

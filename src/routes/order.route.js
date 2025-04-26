@@ -11,12 +11,14 @@ const {
   paySingleOrder,
   sendOrderToCashier,
   sendAllOrdersToCashier, 
+  partialPayOrder
 } = require('../controllers/order.controller');
 
 router.post('/', authMiddleware, createOrder); // Crear orden
 router.get('/', authMiddleware, getOrders); // Listar ordenes
 router.put('/:orderId/items/:itemId', authMiddleware, updateItemStatus); // Cambiar estado de ítem
 
+router.post('/partial-payment/:orderId', authMiddleware, partialPayOrder); // Pagar parcialmente una orden
 router.get('/payment/:tableId', authMiddleware, getOrdersForPayment); // Órdenes listas para pago
 router.post('/payment/:tableId', authMiddleware, finalizePayment); // Pagar TODAS las órdenes de la mesa
 router.post('/pay/:orderId', authMiddleware, paySingleOrder); // Pagar UNA sola orden

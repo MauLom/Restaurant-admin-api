@@ -33,6 +33,7 @@ const OrderSchema = new mongoose.Schema({
       price: Number,
       area: String,  
       comments: String,
+      paid: { type: Boolean, default: false }
     }
   ],
   status: {
