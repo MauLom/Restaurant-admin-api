@@ -1,30 +1,27 @@
 const Order = require('../models/Order.model');
 const PaymentLog = require('../models/PaymentLog.model');
+const TableSession = require('../models/TableSession.model');
 
 exports.getDailySummary = async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const totalOrders = await Order.countDocuments({ createdAt: { $gte: today } });
+    const sessions = await TableSession.find({ createdAt: { $gte: today }, status: { $in: ['open', 'closed'] } });
 
-    const totalRevenue = await Order.aggregate([
-      { $match: { createdAt: { $gte: today } } },
-      { $group: { _id: null, totalRevenue: { $sum: "$total" } } }
-    ]);
-
-    const customersServed = await Order.distinct('tableId', { createdAt: { $gte: today } });
+    const totalSessions = sessions.length;
+    const totalGuests = sessions.reduce((sum, session) => sum + (session.numberOfGuests || 0), 0);
 
     res.json({
-      totalOrders,
-      totalRevenue: totalRevenue.length ? totalRevenue[0].totalRevenue : 0,
-      customersServed: customersServed.length
+      totalSessions,
+      totalGuests,
     });
   } catch (error) {
     console.error('Error fetching daily summary:', error.message);
     res.status(500).json({ error: 'Error fetching daily summary' });
   }
 };
+
 
 exports.getWaiterDailySummary = async (req, res) => {
   try {
@@ -124,27 +121,34 @@ exports.getSalesSummary = async (req, res) => {
     let totalRevenue = 0;
     let totalTips = 0;
     let grandTotal = 0;
+    let paymentBreakdown = {}; 
 
     paymentLogs.forEach(log => {
       totalRevenue += log.total;
       totalTips += log.tip;
       grandTotal += log.grandTotal;
-    });
 
-    console.log('Total Revenue:', totalRevenue);
-    console.log('Total Tips:', totalTips);
-    console.log('Grand Total:', grandTotal);
+      log.paymentMethods.forEach(pm => {
+        if (!paymentBreakdown[pm.method]) {
+          paymentBreakdown[pm.method] = 0;
+        }
+        paymentBreakdown[pm.method] += pm.amount;
+      });
+    });
 
     res.json({
       totalRevenue,
       totalTips,
-      grandTotal
+      grandTotal,
+      paymentBreakdown 
     });
 
   } catch (error) {
+    console.error('Error fetching sales summary:', error.message);
     res.status(500).json({ error: 'Error fetching sales summary' });
   }
 };
+
 
 exports.getWaiterTips = async (req, res) => {
   try {
