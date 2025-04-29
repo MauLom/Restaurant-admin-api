@@ -1,16 +1,13 @@
 const Role = require('../models/Role.model');
 const Permission = require('../models/Permission.model');
-const Group = require('../models/Group.model');
 
-// Create a new role
 exports.createRole = async (req, res) => {
   try {
-    const { name, permissions, groupId } = req.body;
+    const { name, permissions } = req.body;
 
     const newRole = new Role({
       name,
       permissions, // array of permission IDs
-      groupId
     });
 
     await newRole.save();
@@ -21,7 +18,6 @@ exports.createRole = async (req, res) => {
   }
 };
 
-// Assign permissions to a role
 exports.assignPermissionsToRole = async (req, res) => {
   try {
     const { roleId, permissions } = req.body;
@@ -37,20 +33,6 @@ exports.assignPermissionsToRole = async (req, res) => {
   }
 };
 
-// Fetch all roles in a group
-exports.getRolesByGroup = async (req, res) => {
-  try {
-    const { groupId } = req.params;
-
-    const roles = await Role.find({ groupId }).populate('permissions');
-    res.json(roles);
-  } catch (error) {
-    console.error('Error fetching roles:', error.message);
-    res.status(500).json({ error: 'Error fetching roles' });
-  }
-};
-
-// Fetch permissions
 exports.getAllPermissions = async (req, res) => {
   try {
     const permissions = await Permission.find();

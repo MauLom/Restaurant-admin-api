@@ -1,7 +1,8 @@
 const User = require('../models/User.model');
+const Role = require('../models/Role.model'); 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { jwtSecret } = require('../config');
+const { jwtSecret, masterPassword } = require('../config');
 
 
 exports.createUser = async (req, res) => {
@@ -50,11 +51,10 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ error: 'Error logging in' });
   }
 };
-
 exports.getUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-password');
-    const isProfileComplete = user.username && user.role && user.alias; // Adjust based on your schema
+    const isProfileComplete = !!(user.username && user.roleId);
 
     res.json({
       user,
@@ -79,21 +79,41 @@ exports.loginWithPin = async (req, res) => {
     res.status(500).json({ error: 'Error logging in' });
   }
 };
-
 exports.updateUser = async (req, res) => {
   try {
     const { userId } = req.user;
-    const { username, password, role } = req.body;
+    const { username, password, role, alias } = req.body;
 
     const updatedData = {};
+
     if (username) updatedData.username = username;
-    if (password) updatedData.password = await bcrypt.hash(password, 10);
-    if (role) updatedData.role = role;
+    if (alias) updatedData.alias = alias;
+
+    if (password) {
+      updatedData.password = await bcrypt.hash(password, 10);
+    }
+
+    if (role) {
+      // Buscar si el role existe
+      let existingRole = await Role.findOne({ name: role });
+
+      if (!existingRole) {
+        // Si no existe, lo creamos automáticamente (sin permisos todavía)
+        existingRole = await Role.create({
+          name: role,
+          permissions: [],
+          groupId: req.user.groupId || null, // Asignar groupId si lo tienes disponible
+        });
+      }
+
+      updatedData.roleId = existingRole._id;
+    }
 
     const updatedUser = await User.findByIdAndUpdate(userId, updatedData, { new: true });
 
     res.json(updatedUser);
   } catch (error) {
+    console.error('Error updating user:', error.message);
     res.status(500).json({ error: 'Error updating user' });
   }
 };
@@ -155,8 +175,72 @@ exports.generatePin = async (req, res) => {
     res.status(500).json({ error: 'Error generating PIN' });
   }
 };
+exports.adminAccess = async (req, res) => {
+  try {
+    const { masterKey } = req.body;
 
+    const userCount = await User.countDocuments();
 
+    if (userCount > 0) {
+      return res.status(403).json({ error: 'Access denied: Users already exist' });
+    }
+
+    if (masterKey !== masterPassword) {
+      return res.status(401).json({ error: 'Invalid master key' });
+    }
+
+    const token = jwt.sign(
+      { specialAccess: true },
+      jwtSecret,
+      { expiresIn: '10m' } // Token válido 10 minutos para crear admin
+    );
+
+    res.json({ token });
+  } catch (error) {
+    console.error('Error granting admin access:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+exports.createFirstAdmin = async (req, res) => {
+  try {
+    const { username, password, pin } = req.body;
+
+    const userCount = await User.countDocuments();
+    if (userCount > 0) {
+      return res.status(400).json({ error: 'Users already exist' });
+    }
+
+    if (!username || !password || !pin) {
+      return res.status(400).json({ error: 'Username, password and PIN are required' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+      role: 'admin',
+      pin,
+      pinExpiration: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    });
+
+    await newUser.save();
+
+    res.status(201).json({ message: 'First admin created successfully' });
+  } catch (error) {
+    console.error('Error creating first admin:', error.message);
+    res.status(500).json({ error: 'Error creating first admin' });
+  }
+};
+exports.checkUsersExist = async (req, res) => {
+  try {
+    const count = await User.countDocuments();
+    res.json({ exists: count > 0 });
+  } catch (error) {
+    console.error('Error checking if users exist:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 // Get all users with PINs
 exports.getPins = async (req, res) => {
