@@ -85,6 +85,55 @@ $ npm run test
 
 ---
 
+## Demo Account Access 🎯
+
+The system now includes a demo account feature that allows potential clients to explore the full functionality with pre-populated sample data.
+
+### How to Access Demo Mode
+
+1. **Get Demo Credentials**: 
+   ```bash
+   GET /api/users/demo-access
+   ```
+   This endpoint will:
+   - Create a demo account with sample data if it doesn't exist
+   - Return the demo login credentials
+   - Provide welcome instructions for new users
+
+2. **Login to Demo Account**:
+   ```bash
+   POST /api/users/demo-login
+   {
+     "username": "demo_admin",
+     "password": "demo123"
+   }
+   ```
+
+3. **Get Tutorial Instructions**:
+   ```bash
+   GET /api/users/demo-instructions/orders    # For specific sections
+   GET /api/users/demo-instructions           # For all sections
+   ```
+
+### Demo Features
+
+- **Pre-populated Data**: Sample restaurant data including menu items, inventory, orders, and tables
+- **Interactive Tutorials**: Step-by-step guidance for each section of the application
+- **Full Functionality**: All features available for testing and demonstration
+- **Reset Capability**: Demo data can be reset to original state anytime
+- **Temporary Sessions**: Demo accounts have extended session times for better exploration
+
+### Sample Data Included
+
+- Demo restaurant with sections and tables
+- Menu items with ingredients and pricing
+- Inventory items with stock levels
+- Sample orders in different states
+- User roles and permissions
+- Analytics data for reporting
+
+---
+
 ## Environment Variables
 
 Create a `.env` file in the root directory with the following:
@@ -105,6 +154,12 @@ JWT_SECRET=your_jwt_secret_here
 - `POST /auth/login`
 - `GET /users/`
 - `POST /users/`
+
+### Demo Account Access
+- `GET /users/demo-access` - Get demo credentials and setup demo data
+- `POST /users/demo-login` - Login with demo account
+- `GET /users/demo-instructions/:section?` - Get tutorial instructions
+- `POST /users/demo-reset` - Reset demo data
 
 ### Orders
 - `POST /orders/`

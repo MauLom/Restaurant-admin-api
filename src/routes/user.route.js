@@ -2,7 +2,8 @@ const express = require('express');
 const { 
   createUser, loginUser, getUser, updateUser, getAllUsers, 
   loginWithPin, getUserSettings, updateUserSettings, generatePin, 
-  getPins, adminAccess, createFirstAdmin, checkUsersExist 
+  getPins, adminAccess, createFirstAdmin, checkUsersExist,
+  getDemoAccess, loginDemo, getDemoInstructions, resetDemoData
 } = require('../controllers/user.controller');
 const { 
   createRole, assignPermissionsToRole, getRolesByGroup, getAllPermissions 
@@ -18,6 +19,12 @@ router.post('/login', loginUser);
 router.post('/login-pin', loginWithPin);
 router.post('/admin-access', adminAccess);
 router.get('/exists', checkUsersExist);
+
+// Demo access routes
+router.get('/demo-access', getDemoAccess);
+router.post('/demo-login', loginDemo);
+router.get('/demo-instructions/:section?', getDemoInstructions);
+router.post('/demo-reset', resetDemoData);
 
 // Protected routes
 router.get('/profile', authMiddleware, getUser);

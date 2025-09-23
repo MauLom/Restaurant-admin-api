@@ -3,6 +3,7 @@ const Role = require('../models/Role.model');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { jwtSecret, masterPassword } = require('../config');
+const DemoDataService = require('../services/demoData.service');
 
 
 exports.createUser = async (req, res) => {
@@ -250,5 +251,120 @@ exports.getPins = async (req, res) => {
   } catch (error) {
     console.error('Error fetching PINs:', error.message);
     res.status(500).json({ error: 'Error fetching PINs' });
+  }
+};
+
+// Demo Account Access
+exports.getDemoAccess = async (req, res) => {
+  try {
+    // Check if demo data already exists
+    const demoExists = await DemoDataService.isDemoDataExists();
+    
+    if (!demoExists) {
+      // Create demo data if it doesn't exist
+      await DemoDataService.createDemoData();
+    }
+    
+    // Get demo credentials
+    const credentials = DemoDataService.getDemoCredentials();
+    const instructions = DemoDataService.getDemoInstructions();
+    
+    res.json({
+      success: true,
+      message: 'Demo access ready! Use the credentials below to explore the system.',
+      credentials: {
+        username: credentials.username,
+        password: credentials.password,
+        pin: credentials.pin
+      },
+      instructions: instructions.welcome,
+      note: 'This is a demonstration account with pre-populated sample data. All data is temporary and for showcase purposes only.'
+    });
+  } catch (error) {
+    console.error('Error setting up demo access:', error.message);
+    res.status(500).json({ error: 'Error setting up demo access' });
+  }
+};
+
+// Login with demo account
+exports.loginDemo = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const demoCredentials = DemoDataService.getDemoCredentials();
+    
+    // Validate demo credentials
+    if (username !== demoCredentials.username) {
+      return res.status(401).json({ error: 'Invalid demo credentials' });
+    }
+    
+    // Find demo user
+    const user = await User.findOne({ username: demoCredentials.username, isDemo: true });
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Demo user not found' });
+    }
+    
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid demo credentials' });
+    }
+    
+    // Generate token
+    const token = jwt.sign(
+      { 
+        userId: user._id, 
+        role: user.role, 
+        isDemo: true 
+      }, 
+      jwtSecret, 
+      { expiresIn: '4h' } // Longer session for demo
+    );
+    
+    res.json({ 
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        role: user.role,
+        isDemo: true
+      },
+      instructions: DemoDataService.getDemoInstructions().welcome
+    });
+  } catch (error) {
+    console.error('Error logging in demo user:', error.message);
+    res.status(500).json({ error: 'Error logging in demo user' });
+  }
+};
+
+// Get demo instructions for different sections
+exports.getDemoInstructions = async (req, res) => {
+  try {
+    const { section } = req.params;
+    const instructions = DemoDataService.getDemoInstructions();
+    
+    if (section && instructions[section]) {
+      res.json(instructions[section]);
+    } else {
+      res.json(instructions);
+    }
+  } catch (error) {
+    console.error('Error getting demo instructions:', error.message);
+    res.status(500).json({ error: 'Error getting demo instructions' });
+  }
+};
+
+// Reset demo data
+exports.resetDemoData = async (req, res) => {
+  try {
+    const result = await DemoDataService.createDemoData();
+    res.json({
+      success: true,
+      message: 'Demo data has been reset successfully',
+      credentials: result.credentials
+    });
+  } catch (error) {
+    console.error('Error resetting demo data:', error.message);
+    res.status(500).json({ error: 'Error resetting demo data' });
   }
 };
