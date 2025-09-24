@@ -15,6 +15,8 @@ const PaymentLogSchema = new mongoose.Schema({
   paymentMethods: [PaymentMethodSchema],
   waiterId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   isPartial: { type: Boolean, default: false },
+}, {
+  timestamps: true,
 });
 
 const PaymentLog = mongoose.model('PaymentLog', PaymentLogSchema);

@@ -6,7 +6,7 @@ const { getIO } = require('../../websocket');
 
 exports.createOrder = async (req, res) => {
   try {
-    const { tableId, tableSessionId, items, preparationSection, physicalSection, waiterId, comment, numberOfGuests } = req.body;
+    const { tableId, tableSessionId, items, preparationSection, waiterId, comment, numberOfGuests } = req.body;
     let total = 0;
     const orderItems = [];
 
@@ -40,7 +40,6 @@ exports.createOrder = async (req, res) => {
       items: orderItems,
       total,
       section: preparationSection,
-      physicalSection,
       comment: comment,
       numberOfGuests: numberOfGuests,
     });

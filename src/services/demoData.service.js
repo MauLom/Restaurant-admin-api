@@ -41,8 +41,7 @@ class DemoDataService {
       // Create demo admin role
       const demoRole = await Role.create({
         name: 'Demo Admin',
-        permissions: permissions.map(p => p._id),
-        groupId: demoGroup._id
+        permissions: permissions.map(p => p._id)
       });
 
       // Create demo admin user
@@ -71,10 +70,10 @@ class DemoDataService {
 
       // Create demo menu categories
       const categories = await MenuCategory.insertMany([
-        { name: 'Pizzas', description: 'Delicious wood-fired pizzas' },
-        { name: 'Burgers', description: 'Juicy gourmet burgers' },
-        { name: 'Beverages', description: 'Refreshing drinks and cocktails' },
-        { name: 'Salads', description: 'Fresh and healthy salads' }
+        { name: 'Pizzas', description: 'Delicious wood-fired pizzas', area: 'kitchen' },
+        { name: 'Burgers', description: 'Juicy gourmet burgers', area: 'kitchen' },
+        { name: 'Beverages', description: 'Refreshing drinks and cocktails', area: 'bar' },
+        { name: 'Salads', description: 'Fresh and healthy salads', area: 'kitchen' }
       ]);
 
       // Create demo menu items

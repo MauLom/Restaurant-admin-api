@@ -14,6 +14,8 @@ const GroupSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Role',
   }],
+}, {
+  timestamps: true,
 });
 
 const Group = mongoose.model('Group', GroupSchema);

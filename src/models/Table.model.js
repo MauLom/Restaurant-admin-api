@@ -10,6 +10,8 @@ const TableSchema = new mongoose.Schema({
     enum: ['available', 'occupied', 'reserved'],
     required: true,
   },
+}, {
+  timestamps: true,
 });
 
 const Table = mongoose.model('Table', TableSchema);
