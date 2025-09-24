@@ -10,6 +10,8 @@ const PermissionSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+}, {
+  timestamps: true,
 });
 
 const Permission = mongoose.model('Permission', PermissionSchema);
