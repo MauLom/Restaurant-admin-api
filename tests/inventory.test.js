@@ -51,19 +51,20 @@ describe('Inventory API Tests', () => {
       .send({
         name: 'Steak',
         quantity: 10,
-        price: 20.00,
+        unit: 'kg',
+        cost: 20.00,
       });
 
     expect(response.statusCode).toBe(201);
     expect(response.body.name).toBe('Steak');
     expect(response.body.quantity).toBe(10);
-    expect(response.body.price).toBe(20.00);
+    expect(response.body.cost).toBe(20.00);
   });
 
   it('should get all inventory items', async () => {
     await Inventory.insertMany([
-      { name: 'Steak', quantity: 10, price: 20.00 },
-      { name: 'Salad', quantity: 5, price: 10.00 },
+      { name: 'Steak', quantity: 10, unit: 'kg', cost: 20.00 },
+      { name: 'Salad', quantity: 5, unit: 'kg', cost: 10.00 },
     ]);
 
     const response = await request(app)
@@ -77,7 +78,7 @@ describe('Inventory API Tests', () => {
   });
 
   it('should delete an inventory item', async () => {
-    const item = new Inventory({ name: 'Steak', quantity: 10, price: 20.00 });
+    const item = new Inventory({ name: 'Steak', quantity: 10, unit: 'kg', cost: 20.00 });
     await item.save();
 
     const response = await request(app)

@@ -41,8 +41,7 @@ class DemoDataService {
       // Create demo admin role
       const demoRole = await Role.create({
         name: 'Demo Admin',
-        permissions: permissions.map(p => p._id),
-        groupId: demoGroup._id
+        permissions: permissions.map(p => p._id)
       });
 
       // Create demo admin user
