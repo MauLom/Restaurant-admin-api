@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 const routes = require('./routes');
 const socket = require('../websocket');
 const { errorHandler } = require('./middlewares/errorHandler');
+const { swaggerUi, specs } = require('./config/swagger');
 
 const app = express();
 
@@ -32,6 +33,13 @@ try {
 
 // Routes
 app.use('/api', routes);
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  explorer: true,
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Restaurant Management API Documentation'
+}));
 
 
 // Error Handling Middleware
