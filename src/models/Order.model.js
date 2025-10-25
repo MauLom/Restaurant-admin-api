@@ -3,8 +3,19 @@ const mongoose = require('mongoose');
 const OrderSchema = new mongoose.Schema({
   tableId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Table',
     required: true,
+    // Puede referenciar tanto Table como VirtualTable
+  },
+  tableType: {
+    type: String,
+    enum: ['physical', 'virtual'],
+    default: 'physical',
+  },
+  // Para mesas virtuales, especificar qué mesa física específica dentro de la virtual
+  specificPhysicalTableId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Table',
+    required: false, // Solo requerido si tableType es 'virtual'
   },
   tableSessionId: { 
     type: mongoose.Schema.Types.ObjectId,

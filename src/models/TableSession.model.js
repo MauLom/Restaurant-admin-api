@@ -3,8 +3,17 @@ const mongoose = require('mongoose');
 const TableSessionSchema = new mongoose.Schema({
   tableId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Table',
     required: true,
+    // Puede referenciar tanto Table como VirtualTable
+  },
+  tableType: {
+    type: String,
+    enum: ['physical', 'virtual'],
+    default: 'physical',
+  },
+  isVirtual: {
+    type: Boolean,
+    default: false,
   },
   waiterId: {
     type: mongoose.Schema.Types.ObjectId,

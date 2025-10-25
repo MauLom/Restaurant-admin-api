@@ -8,6 +8,7 @@ router.use('/inventory', require('./inventory.route'));
 router.use('/reservations', require('./reservation.route'));
 router.use('/sections', require('./section.route'));
 router.use('/tables', require('./table.route'));
+router.use('/virtual-tables', require('./virtualTable.route'));
 router.use('/analytics', require('./analytics.route'));
 router.use('/menu', require('./menu.route'));
 router.use('/settings', require('./settings.route'));
