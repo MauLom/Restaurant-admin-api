@@ -19,6 +19,7 @@ exports.addInventoryItem = async (req, res) => {
       equivalentGr = 0,
       cost = 0,
       minStock = 0,
+      supplier = '',
       tags = [],
       preparationInstructions = ''
     } = req.body;
@@ -31,6 +32,7 @@ exports.addInventoryItem = async (req, res) => {
       equivalentGr,
       cost,
       minStock,
+      supplier,
       tags,
       preparationInstructions
     });
