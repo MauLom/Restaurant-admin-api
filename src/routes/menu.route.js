@@ -8,6 +8,7 @@ const {
   deleteMenuCategory,
   createMenuItem,
   getMenuItems,
+  updateMenuItem,
   deleteMenuItem,
 } = require('../controllers/menu.controller');
 
@@ -17,7 +18,7 @@ router.delete('/categories/:categoryId', authMiddleware, deleteMenuCategory);
 
 router.post('/items', authMiddleware, createMenuItem);
 router.get('/items', authMiddleware, getMenuItems);
+router.put('/items/:itemId', authMiddleware, updateMenuItem);
 router.delete('/items/:itemId', authMiddleware, deleteMenuItem);
-
 
 module.exports = router;
