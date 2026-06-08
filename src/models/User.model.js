@@ -6,6 +6,12 @@ const UserSchema = new mongoose.Schema({
     required: false,
     unique: true,
   },
+  email: {
+    type: String,
+    required: false,
+    unique: true,
+    sparse: true,
+  },
   alias: {
     type: String,
     required: false,
