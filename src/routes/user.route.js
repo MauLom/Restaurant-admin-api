@@ -1,9 +1,10 @@
 const express = require('express');
-const { 
-  createUser, loginUser, getUser, updateUser, getAllUsers, 
-  loginWithPin, getUserSettings, updateUserSettings, generatePin, 
+const {
+  createUser, loginUser, getUser, updateUser, getAllUsers,
+  loginWithPin, getUserSettings, updateUserSettings, generatePin,
   getPins, adminAccess, createFirstAdmin, checkUsersExist,
-  getDemoAccess, loginDemo, getDemoInstructions, resetDemoData
+  getDemoAccess, loginDemo, getDemoInstructions, resetDemoData,
+  registerUser
 } = require('../controllers/user.controller');
 const { 
   createRole, assignPermissionsToRole, getRolesByGroup, getAllPermissions 
@@ -87,6 +88,7 @@ const router = express.Router();
  */
 // Public routes
 router.post('/signup', createUser);
+router.post('/register', registerUser);
 
 /**
  * @swagger

@@ -233,6 +233,42 @@ exports.createFirstAdmin = async (req, res) => {
     res.status(500).json({ error: 'Error creating first admin' });
   }
 };
+exports.registerUser = async (req, res) => {
+  try {
+    const { username, email, pin } = req.body;
+
+    if (!username || !pin) {
+      return res.status(400).json({ error: 'Username and PIN are required' });
+    }
+
+    if (!/^\d{6}$/.test(pin)) {
+      return res.status(400).json({ error: 'PIN must be exactly 6 digits' });
+    }
+
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(409).json({ error: 'Username already taken' });
+    }
+
+    const existingPin = await User.findOne({ pin });
+    if (existingPin) {
+      return res.status(409).json({ error: 'PIN already in use' });
+    }
+
+    const newUser = new User({
+      username,
+      email: email || undefined,
+      pin,
+      pinExpiration: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    });
+
+    await newUser.save();
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    console.error('Error in registerUser:', error.message);
+    res.status(500).json({ error: 'Error registering user' });
+  }
+};
 exports.checkUsersExist = async (req, res) => {
   try {
     const count = await User.countDocuments();
