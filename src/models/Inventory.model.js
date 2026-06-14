@@ -27,6 +27,14 @@ const InventorySchema = new mongoose.Schema({
     required: false,
     default: 0,
   },
+  minStock: {
+    type: Number,
+    default: 0,
+  },
+  supplier: {
+    type: String,
+    default: '',
+  },
   tags: {
     type: [String],
     default: [],

@@ -10,6 +10,7 @@ const IngredientSchema = new mongoose.Schema({
   quantity: { type: Number, default: 0 },
   unit: { type: String, default: 'unidad' },
   image: { type: ImageSchema, default: () => ({}) },
+  inventoryItemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Inventory', default: null },
 }, { _id: false });
 
 const StepSchema = new mongoose.Schema({
@@ -27,6 +28,7 @@ const RecipeSchema = new mongoose.Schema({
   prepTime: { type: Number, default: 0 },
   cookTime: { type: Number, default: 0 },
   difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
+  price: { type: Number, default: 0 },
   ingredients: { type: [IngredientSchema], default: [] },
   steps: { type: [StepSchema], default: [] },
 }, { timestamps: true });

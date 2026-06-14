@@ -17,9 +17,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) =>
-    file.mimetype.startsWith('image/')
-      ? cb(null, true)
-      : cb(new Error('Solo se permiten imágenes'), false),
+    file.mimetype.startsWith('image/') ? cb(null, true) : cb(new Error('Solo imágenes'), false),
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
@@ -35,7 +33,6 @@ exports.getRecipes = async (req, res) => {
     const recipes = await Recipe.find().sort({ name: 1 });
     res.json(recipes);
   } catch (error) {
-    console.error('Error fetching recipes:', error.message);
     res.status(500).json({ error: 'Error al obtener recetas' });
   }
 };
@@ -64,9 +61,7 @@ exports.createRecipe = async (req, res) => {
 exports.updateRecipe = async (req, res) => {
   try {
     const recipe = await Recipe.findByIdAndUpdate(
-      req.params.recipeId,
-      req.body,
-      { new: true, runValidators: true }
+      req.params.recipeId, req.body, { new: true, runValidators: true }
     );
     if (!recipe) return res.status(404).json({ error: 'Receta no encontrada' });
     res.json(recipe);
