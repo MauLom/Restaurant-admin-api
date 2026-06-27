@@ -57,9 +57,13 @@ exports.getUser = async (req, res) => {
     const user = await User.findById(req.user.userId).select('-password');
     const isProfileComplete = !!(user.username && user.roleId);
 
+    const role = await Role.findOne({ name: user.role }).populate('permissions');
+    const permissions = role?.permissions?.map(p => p.name) || [];
+
     res.json({
       user,
-      isProfileComplete
+      isProfileComplete,
+      permissions
     });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching user profile' });
@@ -129,6 +133,64 @@ exports.getAllUsers = async (req, res) => {
 
 
 };
+
+exports.updateUserById = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { username, role, pin } = req.body;
+
+    const updatedData = {};
+    if (username) updatedData.username = username;
+
+    if (role) {
+      let existingRole = await Role.findOne({ name: role });
+      if (!existingRole) {
+        existingRole = await Role.create({ name: role, permissions: [] });
+      }
+      updatedData.role = role;
+      updatedData.roleId = existingRole._id;
+    }
+
+    if (pin) {
+      updatedData.pin = pin;
+      updatedData.pinExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, { new: true }).select('-password');
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(updatedUser);
+  } catch (error) {
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0] || 'field';
+      return res.status(400).json({ error: `${field} already in use` });
+    }
+    console.error('Error updating user:', error.message);
+    res.status(500).json({ error: 'Error updating user' });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (userId === req.user.userId) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error.message);
+    res.status(500).json({ error: 'Error deleting user' });
+  }
+};
 exports.getUserSettings = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('settings');
@@ -172,6 +234,10 @@ exports.generatePin = async (req, res) => {
     await newUser.save();
     res.status(201).json(newUser);
   } catch (error) {
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0] || 'field';
+      return res.status(400).json({ error: `${field} already in use` });
+    }
     console.error('Error generating PIN:', error.message);
     res.status(500).json({ error: 'Error generating PIN' });
   }

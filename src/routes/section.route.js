@@ -11,14 +11,15 @@ const {
   getSectionTables,  // Import the new controller method
 } = require('../controllers/sections.controller');
 const { authMiddleware } = require('../middlewares/authMiddleware');
+const { requirePermission } = require('../middlewares/permissionMiddleware');
 
 const router = express.Router();
 
 router.get('/', authMiddleware, getAllSections);
-router.post('/', authMiddleware, createSection);
+router.post('/', authMiddleware, requirePermission('sections'), createSection);
 router.get('/:id', authMiddleware, getSectionById);
-router.post('/:id/tables', authMiddleware, addTableToSection);
-router.put('/:id', authMiddleware, updateSection);
-router.delete('/:id', authMiddleware, deleteSection);
+router.post('/:id/tables', authMiddleware, requirePermission('sections'), addTableToSection);
+router.put('/:id', authMiddleware, requirePermission('sections'), updateSection);
+router.delete('/:id', authMiddleware, requirePermission('sections'), deleteSection);
 
 module.exports = router;

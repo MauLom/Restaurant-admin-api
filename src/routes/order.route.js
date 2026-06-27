@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middlewares/authMiddleware');
+const { requirePermission } = require('../middlewares/permissionMiddleware');
 const {
   createOrder,
   getOrders,
@@ -101,7 +102,7 @@ const {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', authMiddleware, createOrder); // Crear orden
+router.post('/', authMiddleware, requirePermission('orders'), createOrder); // Crear orden
 
 /**
  * @swagger
@@ -193,7 +194,7 @@ router.get('/', authMiddleware, getOrders); // Listar ordenes
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:orderId/items/:itemId', authMiddleware, updateItemStatus); // Cambiar estado de ítem
+router.put('/:orderId/items/:itemId', authMiddleware, requirePermission('kitchenOrders'), updateItemStatus); // Cambiar estado de ítem
 
 /**
  * @swagger
@@ -240,7 +241,7 @@ router.put('/:orderId/items/:itemId', authMiddleware, updateItemStatus); // Camb
  *             schema:
  *               $ref: '#/components/schemas/Success'
  */
-router.post('/partial-payment/:orderId', authMiddleware, partialPayOrder); // Pagar parcialmente una orden
+router.post('/partial-payment/:orderId', authMiddleware, requirePermission('cashier'), partialPayOrder); // Pagar parcialmente una orden
 
 /**
  * @swagger
@@ -266,7 +267,7 @@ router.post('/partial-payment/:orderId', authMiddleware, partialPayOrder); // Pa
  *               items:
  *                 $ref: '#/components/schemas/Order'
  */
-router.get('/payment/:tableId', authMiddleware, getOrdersForPayment); // Órdenes listas para pago
+router.get('/payment/:tableId', authMiddleware, requirePermission('cashier'), getOrdersForPayment); // Órdenes listas para pago
 
 /**
  * @swagger
@@ -317,7 +318,7 @@ router.get('/payment/:tableId', authMiddleware, getOrdersForPayment); // Órdene
  *             schema:
  *               $ref: '#/components/schemas/Success'
  */
-router.post('/payment/:tableId', authMiddleware, finalizePayment); // Pagar TODAS las órdenes de la mesa
+router.post('/payment/:tableId', authMiddleware, requirePermission('cashier'), finalizePayment); // Pagar TODAS las órdenes de la mesa
 
 /**
  * @swagger
@@ -364,7 +365,7 @@ router.post('/payment/:tableId', authMiddleware, finalizePayment); // Pagar TODA
  *             schema:
  *               $ref: '#/components/schemas/Success'
  */
-router.post('/pay/:orderId', authMiddleware, paySingleOrder); // Pagar UNA sola orden
+router.post('/pay/:orderId', authMiddleware, requirePermission('cashier'), paySingleOrder); // Pagar UNA sola orden
 
 /**
  * @swagger
@@ -419,7 +420,7 @@ router.get('/area', authMiddleware, getOrdersByArea); // Órdenes por área
  *             schema:
  *               $ref: '#/components/schemas/Success'
  */
-router.put('/:orderId/send-to-cashier', authMiddleware, sendOrderToCashier); // Marcar orden como enviada a caja
+router.put('/:orderId/send-to-cashier', authMiddleware, requirePermission('orders'), sendOrderToCashier); // Marcar orden como enviada a caja
 
 /**
  * @swagger
@@ -443,6 +444,6 @@ router.put('/:orderId/send-to-cashier', authMiddleware, sendOrderToCashier); // 
  *             schema:
  *               $ref: '#/components/schemas/Success'
  */
-router.put('/send-all-to-cashier/:tableId', authMiddleware, sendAllOrdersToCashier); // Marcar TODAS las órdenes de la mesa como enviadas
+router.put('/send-all-to-cashier/:tableId', authMiddleware, requirePermission('orders'), sendAllOrdersToCashier); // Marcar TODAS las órdenes de la mesa como enviadas
 
 module.exports = router;

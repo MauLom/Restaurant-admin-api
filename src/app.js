@@ -9,10 +9,11 @@ const routes = require('./routes');
 const socket = require('../websocket');
 const { errorHandler } = require('./middlewares/errorHandler');
 const { swaggerUi, specs } = require('./config/swagger');
+const seedRolesAndPermissions = require('./utils/seedRolesAndPermissions');
 
 const app = express();
 
-connectDB();
+connectDB().then(() => seedRolesAndPermissions());
 
 app.use(helmet());
 app.use(cors());

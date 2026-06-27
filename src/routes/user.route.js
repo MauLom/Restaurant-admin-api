@@ -4,13 +4,15 @@ const {
   loginWithPin, getUserSettings, updateUserSettings, generatePin,
   getPins, adminAccess, createFirstAdmin, checkUsersExist,
   getDemoAccess, loginDemo, getDemoInstructions, resetDemoData,
-  registerUser
+  registerUser, updateUserById, deleteUser
 } = require('../controllers/user.controller');
-const { 
-  createRole, assignPermissionsToRole, getRolesByGroup, getAllPermissions 
+const {
+  createRole, assignPermissionsToRole, getAllPermissions,
+  getRoles, getRolePermissions, setRolePermissions
 } = require('../controllers/role.controller');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { specialAccessMiddleware } = require('../middlewares/specialAccessMiddleware');
+const { requireRole, requirePermission } = require('../middlewares/permissionMiddleware');
 
 const router = express.Router();
 
@@ -444,13 +446,16 @@ router.put('/profile', authMiddleware, updateUser);
 
 router.get('/settings', authMiddleware, getUserSettings);
 router.put('/settings', authMiddleware, updateUserSettings);
-router.post('/pins', authMiddleware, generatePin);
-router.get('/pins', authMiddleware, getPins);
+router.post('/pins', authMiddleware, requirePermission('generatePins'), generatePin);
+router.get('/pins', authMiddleware, requirePermission('generatePins'), getPins);
 
 // Role management
-router.post('/roles', authMiddleware, createRole);
-router.post('/roles/assign-permissions', authMiddleware, assignPermissionsToRole);
-router.get('/permissions', authMiddleware, getAllPermissions);
+router.get('/roles', authMiddleware, requireRole('admin'), getRoles);
+router.post('/roles', authMiddleware, requireRole('admin'), createRole);
+router.get('/roles/:id/permissions', authMiddleware, requireRole('admin'), getRolePermissions);
+router.put('/roles/:id/permissions', authMiddleware, requireRole('admin'), setRolePermissions);
+router.post('/roles/assign-permissions', authMiddleware, requireRole('admin'), assignPermissionsToRole);
+router.get('/permissions', authMiddleware, requireRole('admin'), getAllPermissions);
 
 // Others
 router.post('/first-admin', specialAccessMiddleware, createFirstAdmin);
@@ -478,6 +483,10 @@ router.post('/first-admin', specialAccessMiddleware, createFirstAdmin);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', authMiddleware, getAllUsers);
+router.get('/', authMiddleware, requireRole('admin'), getAllUsers);
+
+// Edit/delete existing accounts (admin only)
+router.put('/:userId', authMiddleware, requireRole('admin'), updateUserById);
+router.delete('/:userId', authMiddleware, requireRole('admin'), deleteUser);
 
 module.exports = router;

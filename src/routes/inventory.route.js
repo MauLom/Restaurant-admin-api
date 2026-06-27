@@ -6,6 +6,7 @@ const {
   deleteInventoryItem,
 } = require('../controllers/inventory.controller');
 const { authMiddleware } = require('../middlewares/authMiddleware');
+const { requirePermission } = require('../middlewares/permissionMiddleware');
 
 const router = express.Router();
 
@@ -113,7 +114,7 @@ router.get('/', authMiddleware, getInventory);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', authMiddleware, addInventoryItem);
+router.post('/', authMiddleware, requirePermission('inventory'), addInventoryItem);
 
 /**
  * @swagger
@@ -168,7 +169,7 @@ router.post('/', authMiddleware, addInventoryItem);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:itemId', authMiddleware, updateInventoryItem); 
+router.put('/:itemId', authMiddleware, requirePermission('inventory'), updateInventoryItem);
 
 /**
  * @swagger
@@ -200,6 +201,6 @@ router.put('/:itemId', authMiddleware, updateInventoryItem);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/:itemId', authMiddleware, deleteInventoryItem);
+router.delete('/:itemId', authMiddleware, requirePermission('inventory'), deleteInventoryItem);
 
 module.exports = router;
