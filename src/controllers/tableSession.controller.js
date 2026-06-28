@@ -103,6 +103,35 @@ exports.closeTableSession = async (req, res) => {
     }
 };
 
+exports.updateSeatRestrictions = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const { seatRestrictions } = req.body;
+
+        if (!Array.isArray(seatRestrictions)) {
+            return res.status(400).json({ error: 'seatRestrictions debe ser un arreglo' });
+        }
+
+        const session = await TableSession.findById(sessionId);
+        if (!session) return res.status(404).json({ error: 'Sesión no encontrada' });
+
+        const invalidSeat = seatRestrictions.find(
+            (r) => !Number.isInteger(r.seatNumber) || r.seatNumber < 1 || r.seatNumber > session.numberOfGuests
+        );
+        if (invalidSeat) {
+            return res.status(400).json({ error: 'Número de asiento fuera de rango' });
+        }
+
+        session.seatRestrictions = seatRestrictions;
+        await session.save();
+
+        res.json(session);
+    } catch (err) {
+        console.error('Error al actualizar restricciones de asientos:', err);
+        res.status(500).json({ error: 'Error al actualizar restricciones de asientos' });
+    }
+};
+
 exports.closeSessionByTableId = async (req, res) => {
     try {
         const { tableId } = req.params;

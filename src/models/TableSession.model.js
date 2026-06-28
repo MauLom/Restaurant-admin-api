@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const ALLERGENS = require('../config/allergens');
 
 const TableSessionSchema = new mongoose.Schema({
   tableId: {
@@ -36,6 +37,19 @@ const TableSessionSchema = new mongoose.Schema({
   closedAt: {
     type: Date,
   },
+  seatRestrictions: [
+    {
+      seatNumber: {
+        type: Number,
+        required: true,
+      },
+      allergens: {
+        type: [String],
+        enum: ALLERGENS,
+        default: [],
+      },
+    }
+  ],
 
 }, { timestamps: true });
 

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const ALLERGENS = require('../config/allergens');
 
 const MenuItemSchema = new mongoose.Schema({
   name: {
@@ -37,6 +38,11 @@ const MenuItemSchema = new mongoose.Schema({
   },
   comments: {
     type: [String],
+    default: [],
+  },
+  allergens: {
+    type: [String],
+    enum: ALLERGENS,
     default: [],
   }
 }, {

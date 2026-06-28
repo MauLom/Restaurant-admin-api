@@ -2,13 +2,22 @@ const Order = require('../models/Order.model');
 const MenuItem = require('../models/MenuItem.model');
 const PaymentLog = require('../models/PaymentLog.model');
 const Table = require('../models/Table.model');
+const TableSession = require('../models/TableSession.model');
 const { getIO } = require('../../websocket');
 
 exports.createOrder = async (req, res) => {
   try {
     const { tableId, tableSessionId, items, preparationSection, waiterId, comment, numberOfGuests } = req.body;
+
+    let seatRestrictions = [];
+    if (tableSessionId) {
+      const session = await TableSession.findById(tableSessionId).select('seatRestrictions');
+      if (session) seatRestrictions = session.seatRestrictions || [];
+    }
+
     let total = 0;
     const orderItems = [];
+    const allergyConflicts = [];
 
     for (const item of items) {
       const menuItem = await MenuItem.findById(item.itemId).populate('category');
@@ -17,6 +26,16 @@ exports.createOrder = async (req, res) => {
       }
       if (!menuItem.category || !menuItem.category.area) {
         return res.status(400).json({ error: `Category missing or invalid for item ${menuItem.name}` });
+      }
+
+      if (item.seatNumber) {
+        const seatRestriction = seatRestrictions.find((r) => r.seatNumber === item.seatNumber);
+        if (seatRestriction && seatRestriction.allergens.length > 0) {
+          const conflicts = (menuItem.allergens || []).filter((a) => seatRestriction.allergens.includes(a));
+          if (conflicts.length > 0) {
+            allergyConflicts.push({ itemName: menuItem.name, seatNumber: item.seatNumber, allergens: conflicts });
+          }
+        }
       }
 
       const itemArea = menuItem.category.area;
@@ -30,7 +49,13 @@ exports.createOrder = async (req, res) => {
         comments: item.comments,
         quantity: item.quantity,
         area: itemArea,
+        seatNumber: item.seatNumber || undefined,
+        allergens: menuItem.allergens || [],
       });
+    }
+
+    if (allergyConflicts.length > 0) {
+      return res.status(409).json({ error: 'Allergy conflict detected', conflicts: allergyConflicts });
     }
 
     const newOrder = new Order({

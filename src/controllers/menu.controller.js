@@ -39,7 +39,8 @@ exports.createMenuItem = async (req, res) => {
       price,
       category,
       comments = [],
-      ingredients = []
+      ingredients = [],
+      allergens = []
     } = req.body;
 
     const newItem = new MenuItem({
@@ -48,7 +49,8 @@ exports.createMenuItem = async (req, res) => {
       price,
       category,
       comments,
-      ingredients
+      ingredients,
+      allergens
     });
 
     await newItem.save();
@@ -71,7 +73,8 @@ exports.updateMenuItem = async (req, res) => {
       price,
       category,
       comments,
-      ingredients
+      ingredients,
+      allergens
     } = req.body;
 
     const updatedItem = await MenuItem.findByIdAndUpdate(
@@ -82,7 +85,8 @@ exports.updateMenuItem = async (req, res) => {
         ...(price !== undefined && { price }),
         ...(category !== undefined && { category }),
         ...(comments !== undefined && { comments }),
-        ...(ingredients !== undefined && { ingredients })
+        ...(ingredients !== undefined && { ingredients }),
+        ...(allergens !== undefined && { allergens })
       },
       { new: true }
     );

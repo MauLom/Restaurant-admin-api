@@ -42,8 +42,10 @@ const OrderSchema = new mongoose.Schema({
         default: 'preparing',
       },
       price: Number,
-      area: String,  
+      area: String,
       comments: String,
+      seatNumber: { type: Number, required: false },
+      allergens: { type: [String], default: [] },
       paid: { type: Boolean, default: false }
     }
   ],

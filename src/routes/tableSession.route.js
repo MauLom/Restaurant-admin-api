@@ -15,6 +15,9 @@ router.get('/:sessionId', authMiddleware, tableSessionController.getSessionWithO
 // Marcar la sesión como lista para cobrar
 router.put('/:sessionId/mark-ready', authMiddleware, tableSessionController.markSessionReadyForPayment);
 
+// Actualizar restricciones alimentarias por asiento
+router.put('/:sessionId/seat-restrictions', authMiddleware, tableSessionController.updateSeatRestrictions);
+
 // Cerrar sesión de mesa
 router.put('/:sessionId/close', authMiddleware, tableSessionController.closeTableSession);
 
