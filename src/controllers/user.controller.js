@@ -45,6 +45,10 @@ exports.loginUser = async (req, res) => {
       return res.status(401).json({ error: 'Invalid password' });
     }
 
+    if (user.isActive === false) {
+      return res.status(403).json({ error: 'Account is deactivated' });
+    }
+
     const token = jwt.sign({ userId: user._id, role: user.role }, jwtSecret, { expiresIn: '1h' });
     res.json({ token });
   } catch (error) {
@@ -76,6 +80,10 @@ exports.loginWithPin = async (req, res) => {
 
     if (!user || new Date() > user.pinExpiration) {
       return res.status(401).json({ error: 'Invalid or expired PIN' });
+    }
+
+    if (user.isActive === false) {
+      return res.status(403).json({ error: 'Account is deactivated' });
     }
 
     const token = jwt.sign({ userId: user._id, role: user.role }, jwtSecret, { expiresIn: '1h' });
@@ -134,10 +142,24 @@ exports.getAllUsers = async (req, res) => {
 
 };
 
+exports.getWaiters = async (req, res) => {
+  try {
+    const waiters = await User.find({ role: 'waiter' }).select('username');
+    res.json(waiters);
+  } catch (error) {
+    console.error('Error fetching waiters:', error.message);
+    res.status(500).json({ error: 'Error fetching waiters' });
+  }
+};
+
 exports.updateUserById = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { username, role, pin } = req.body;
+    const { username, role, pin, isActive, deactivationReason } = req.body;
+
+    if (isActive === false && userId === req.user.userId) {
+      return res.status(400).json({ error: 'Cannot deactivate your own account' });
+    }
 
     const updatedData = {};
     if (username) updatedData.username = username;
@@ -154,6 +176,11 @@ exports.updateUserById = async (req, res) => {
     if (pin) {
       updatedData.pin = pin;
       updatedData.pinExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    }
+
+    if (typeof isActive === 'boolean') {
+      updatedData.isActive = isActive;
+      updatedData.deactivationReason = isActive ? '' : (deactivationReason || '');
     }
 
     const updatedUser = await User.findByIdAndUpdate(userId, updatedData, { new: true }).select('-password');

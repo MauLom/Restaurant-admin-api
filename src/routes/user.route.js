@@ -4,7 +4,7 @@ const {
   loginWithPin, getUserSettings, updateUserSettings, generatePin,
   getPins, adminAccess, createFirstAdmin, checkUsersExist,
   getDemoAccess, loginDemo, getDemoInstructions, resetDemoData,
-  registerUser, updateUserById, deleteUser
+  registerUser, updateUserById, deleteUser, getWaiters
 } = require('../controllers/user.controller');
 const {
   createRole, assignPermissionsToRole, getAllPermissions,
@@ -448,6 +448,7 @@ router.get('/settings', authMiddleware, getUserSettings);
 router.put('/settings', authMiddleware, updateUserSettings);
 router.post('/pins', authMiddleware, requirePermission('generatePins'), generatePin);
 router.get('/pins', authMiddleware, requirePermission('generatePins'), getPins);
+router.get('/waiters', authMiddleware, requirePermission('orders'), getWaiters);
 
 // Role management
 router.get('/roles', authMiddleware, requireRole('admin'), getRoles);
