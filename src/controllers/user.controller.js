@@ -251,9 +251,19 @@ exports.generatePin = async (req, res) => {
 
     const pinExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
+    let roleId;
+    if (role) {
+      let existingRole = await Role.findOne({ name: role });
+      if (!existingRole) {
+        existingRole = await Role.create({ name: role, permissions: [] });
+      }
+      roleId = existingRole._id;
+    }
+
     const newUser = new User({
       username,  // Use the provided username
       role,
+      roleId,
       pin,
       pinExpiration,
     });
@@ -326,16 +336,22 @@ exports.createFirstAdmin = async (req, res) => {
     res.status(500).json({ error: 'Error creating first admin' });
   }
 };
+const SELF_REGISTRATION_ROLES = ['waiter', 'hostess', 'cashier', 'kitchen', 'bar'];
+
 exports.registerUser = async (req, res) => {
   try {
-    const { username, email, pin } = req.body;
+    const { username, email, pin, role } = req.body;
 
-    if (!username || !pin) {
-      return res.status(400).json({ error: 'Username and PIN are required' });
+    if (!username || !pin || !role) {
+      return res.status(400).json({ error: 'Username, PIN and role are required' });
     }
 
     if (!/^\d{6}$/.test(pin)) {
       return res.status(400).json({ error: 'PIN must be exactly 6 digits' });
+    }
+
+    if (!SELF_REGISTRATION_ROLES.includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
     }
 
     const existingUsername = await User.findOne({ username });
@@ -348,9 +364,16 @@ exports.registerUser = async (req, res) => {
       return res.status(409).json({ error: 'PIN already in use' });
     }
 
+    let existingRole = await Role.findOne({ name: role });
+    if (!existingRole) {
+      existingRole = await Role.create({ name: role, permissions: [] });
+    }
+
     const newUser = new User({
       username,
       email: email || undefined,
+      role,
+      roleId: existingRole._id,
       pin,
       pinExpiration: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     });
