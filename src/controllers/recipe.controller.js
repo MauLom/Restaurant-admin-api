@@ -2,8 +2,8 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const Recipe = require('../models/Recipe.model');
+const { recipesDir: uploadsDir } = require('../config/uploadsDir');
 
-const uploadsDir = path.join(__dirname, '../../uploads/recipes');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const storage = multer.diskStorage({
