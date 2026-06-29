@@ -151,7 +151,7 @@ exports.getOrdersForPayment = async (req, res) => {
 
     const orders = await Order.find({
       tableId,
-      status: 'ready',
+      status: { $in: ['ready', 'sent to cashier'] },
       paid: false,
     });
 
@@ -172,7 +172,7 @@ exports.finalizePayment = async (req, res) => {
 
     const orders = await Order.find({
       tableId,
-      status: 'ready',
+      status: { $in: ['ready', 'sent to cashier'] },
       paid: false,
     });
 
@@ -275,7 +275,7 @@ exports.paySingleOrder = async (req, res) => {
     const { tip = 0, paymentMethods } = req.body;
 
     const order = await Order.findById(orderId);
-    if (!order || order.paid || order.status !== 'ready') {
+    if (!order || order.paid || !['ready', 'sent to cashier'].includes(order.status)) {
       return res.status(400).json({ error: 'Orden no válida para pago' });
     }
 
