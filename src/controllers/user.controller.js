@@ -2,7 +2,7 @@ const User = require('../models/User.model');
 const Role = require('../models/Role.model'); 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { jwtSecret, masterPassword } = require('../config');
+const { jwtSecret, masterPassword, pinExpirationMs } = require('../config');
 const DemoDataService = require('../services/demoData.service');
 
 
@@ -175,7 +175,7 @@ exports.updateUserById = async (req, res) => {
 
     if (pin) {
       updatedData.pin = pin;
-      updatedData.pinExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      updatedData.pinExpiration = new Date(Date.now() + pinExpirationMs);
     }
 
     if (typeof isActive === 'boolean') {
@@ -249,7 +249,7 @@ exports.generatePin = async (req, res) => {
       return res.status(400).json({ error: 'PIN and username are required' });
     }
 
-    const pinExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+    const pinExpiration = new Date(Date.now() + pinExpirationMs);
 
     let roleId;
     if (role) {
@@ -325,7 +325,7 @@ exports.createFirstAdmin = async (req, res) => {
       password: hashedPassword,
       role: 'admin',
       pin,
-      pinExpiration: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      pinExpiration: new Date(Date.now() + pinExpirationMs),
     });
 
     await newUser.save();
@@ -375,7 +375,7 @@ exports.registerUser = async (req, res) => {
       role,
       roleId: existingRole._id,
       pin,
-      pinExpiration: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      pinExpiration: new Date(Date.now() + pinExpirationMs),
     });
 
     await newUser.save();

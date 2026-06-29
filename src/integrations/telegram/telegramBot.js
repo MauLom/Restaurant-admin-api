@@ -1,6 +1,6 @@
 const { Telegraf } = require('telegraf');
 const User = require('../../models/User.model');
-const { telegramBotToken } = require('../../config');
+const { telegramBotToken, pinExpirationMs } = require('../../config');
 const bot = new Telegraf(telegramBotToken);
 
 bot.start((ctx) => ctx.reply('Welcome to the Restaurant Management Bot!'));
@@ -13,7 +13,7 @@ bot.command('generate_pin', async (ctx) => {
 
   try {
     const pin = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit random pin
-    const pinExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // Expires in 24 hours
+    const pinExpiration = new Date(Date.now() + pinExpirationMs);
 
     // Create a user with just a pin
     const newUser = new User({
