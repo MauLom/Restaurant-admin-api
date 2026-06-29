@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const ALLERGENS = require('../config/allergens');
 
 const InventorySchema = new mongoose.Schema({
   name: {
@@ -42,7 +43,12 @@ const InventorySchema = new mongoose.Schema({
   preparationInstructions: {
     type: String,
     default: '',
-  }
+  },
+  allergens: {
+    type: [String],
+    enum: ALLERGENS,
+    default: [],
+  },
 }, {
   timestamps: true,
 });

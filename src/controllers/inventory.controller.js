@@ -21,7 +21,8 @@ exports.addInventoryItem = async (req, res) => {
       minStock = 0,
       supplier = '',
       tags = [],
-      preparationInstructions = ''
+      preparationInstructions = '',
+      allergens = []
     } = req.body;
 
     const newItem = new Inventory({
@@ -34,7 +35,8 @@ exports.addInventoryItem = async (req, res) => {
       minStock,
       supplier,
       tags,
-      preparationInstructions
+      preparationInstructions,
+      allergens
     });
 
     await newItem.save();
