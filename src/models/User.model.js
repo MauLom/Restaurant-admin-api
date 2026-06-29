@@ -45,6 +45,14 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+  deactivationReason: {
+    type: String,
+    required: false,
+  },
   isDemo: {
     type: Boolean,
     default: false,
