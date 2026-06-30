@@ -7,7 +7,8 @@ const {
   getWaiterDailySummary,
   getPopularItems,
   getSalesSummary,
-  getWaiterTips
+  getWaiterTips,
+  getWaiterAnalytics
 } = require('../controllers/analytics.controller');
 
 router.get('/daily-summary', authMiddleware, requirePermission('analytics'), getDailySummary);
@@ -16,5 +17,6 @@ router.get('/waiter-daily-summary', authMiddleware, requirePermission('analytics
 router.get('/popular-items', authMiddleware, requirePermission('analytics'), getPopularItems);
 router.get('/sales-summary', authMiddleware, requirePermission('analytics'), getSalesSummary);
 router.get('/waiter-tips', authMiddleware, requirePermission('analytics'), getWaiterTips);
+router.get('/waiter-analytics', authMiddleware, requirePermission('waiterOrders'), getWaiterAnalytics);
 
 module.exports = router;

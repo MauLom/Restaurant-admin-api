@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Order = require('../models/Order.model');
 const PaymentLog = require('../models/PaymentLog.model');
 const TableSession = require('../models/TableSession.model');
@@ -26,7 +27,7 @@ exports.getDailySummary = async (req, res) => {
 exports.getWaiterDailySummary = async (req, res) => {
   try {
     const { date } = req.query;
-    const waiterId = req.user._id;
+    const waiterId = req.user.userId;
 
     const targetDate = date ? new Date(date) : new Date();
     targetDate.setHours(0, 0, 0, 0);
@@ -149,6 +150,57 @@ exports.getSalesSummary = async (req, res) => {
   }
 };
 
+
+exports.getWaiterAnalytics = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const waiterId = new mongoose.Types.ObjectId(req.user.userId);
+
+    const start = startDate ? new Date(startDate + 'T00:00:00Z') : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate + 'T23:59:59Z') : new Date();
+
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ error: 'Invalid date range provided' });
+    }
+
+    const [orderStats, tipStats, popularItems] = await Promise.all([
+      Order.aggregate([
+        { $match: { waiterId, paid: true, createdAt: { $gte: start, $lte: end } } },
+        { $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          totalRevenue: { $sum: '$total' },
+          totalGuests: { $sum: { $ifNull: ['$numberOfGuests', 1] } }
+        }}
+      ]),
+      PaymentLog.aggregate([
+        { $match: { waiterId, timestamp: { $gte: start, $lte: end } } },
+        { $group: { _id: null, totalTips: { $sum: '$tip' } } }
+      ]),
+      Order.aggregate([
+        { $match: { waiterId, paid: true, createdAt: { $gte: start, $lte: end } } },
+        { $unwind: '$items' },
+        { $group: { _id: '$items.name', orders: { $sum: '$items.quantity' } } },
+        { $sort: { orders: -1 } },
+        { $limit: 5 }
+      ])
+    ]);
+
+    const stats = orderStats[0] || { totalOrders: 0, totalRevenue: 0, totalGuests: 0 };
+    const tips = tipStats[0] || { totalTips: 0 };
+
+    res.json({
+      totalOrders: stats.totalOrders,
+      totalRevenue: stats.totalRevenue,
+      totalGuests: stats.totalGuests,
+      totalTips: tips.totalTips,
+      popularItems: popularItems.map(item => ({ name: item._id, orders: item.orders }))
+    });
+  } catch (error) {
+    console.error('Error fetching waiter analytics:', error);
+    res.status(500).json({ error: 'Error fetching waiter analytics' });
+  }
+};
 
 exports.getWaiterTips = async (req, res) => {
   try {
