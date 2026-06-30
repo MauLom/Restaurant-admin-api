@@ -430,5 +430,12 @@ exports.partialPayOrder = async (req, res) => {
   }
 };
 
-
-
+exports.getTablesWithPendingPayment = async (req, res) => {
+  try {
+    const orders = await Order.find({ status: 'ready', paid: false }).select('tableId').lean();
+    const tableIds = [...new Set(orders.map(o => o.tableId?.toString()).filter(Boolean))];
+    res.json(tableIds);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching tables with pending payment' });
+  }
+};

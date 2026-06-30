@@ -13,7 +13,8 @@ const {
   paySingleOrder,
   sendOrderToCashier,
   sendAllOrdersToCashier,
-  partialPayOrder
+  partialPayOrder,
+  getTablesWithPendingPayment,
 } = require('../controllers/order.controller');
 
 /**
@@ -298,6 +299,7 @@ router.post('/partial-payment/:orderId', authMiddleware, requirePermission('cash
  *               items:
  *                 $ref: '#/components/schemas/Order'
  */
+router.get('/pending-payment-tables', authMiddleware, requirePermission('cashier'), getTablesWithPendingPayment);
 router.get('/payment/:tableId', authMiddleware, requirePermission('cashier'), getOrdersForPayment); // Órdenes listas para pago
 
 /**
