@@ -54,3 +54,27 @@ exports.updateTable = async (req, res) => {
     res.status(500).json({ error: 'Error updating table' });
   }
 };
+
+// Release a table that's under maintenance/cleaning back to available
+exports.releaseTable = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+
+    const table = await Table.findById(tableId);
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    if (table.status !== 'maintenance') {
+      return res.status(400).json({ error: 'Table is not in maintenance status' });
+    }
+
+    table.status = 'available';
+    await table.save();
+
+    res.json(table);
+  } catch (error) {
+    console.error('Error releasing table:', error.message);
+    res.status(500).json({ error: 'Error releasing table' });
+  }
+};

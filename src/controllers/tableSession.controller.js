@@ -94,7 +94,7 @@ exports.closeTableSession = async (req, res) => {
         session.status = 'closed';
         await session.save();
 
-        await Table.findByIdAndUpdate(session.tableId, { status: 'available' });
+        await Table.findByIdAndUpdate(session.tableId, { status: 'maintenance' });
 
         res.json({ message: 'Sesión cerrada correctamente', session });
     } catch (error) {
@@ -125,7 +125,7 @@ exports.closeSessionByTableId = async (req, res) => {
 
         const table = await Table.findById(tableId);
         if (table) {
-            table.status = 'available';
+            table.status = 'maintenance';
             await table.save();
         }
 

@@ -7,7 +7,7 @@ const TableSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['available', 'occupied', 'reserved'],
+    enum: ['available', 'occupied', 'reserved', 'maintenance'],
     required: true,
   },
   capacity: {
