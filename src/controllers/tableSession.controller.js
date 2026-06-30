@@ -41,6 +41,18 @@ exports.getOpenSessions = async (req, res) => {
     }
 };
 
+exports.getActiveSessions = async (req, res) => {
+    try {
+        const sessions = await TableSession.find({
+            status: { $in: ['open', 'ready_for_payment'] }
+        }).select('tableId status tableType');
+        res.json(sessions);
+    } catch (err) {
+        console.error('Error al obtener sesiones activas:', err);
+        res.status(500).json({ error: 'Error al obtener sesiones activas' });
+    }
+};
+
 exports.getSessionWithOrders = async (req, res) => {
     try {
         const { sessionId } = req.params;
