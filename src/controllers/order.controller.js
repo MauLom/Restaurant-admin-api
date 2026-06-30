@@ -64,7 +64,10 @@ exports.createOrder = async (req, res) => {
     }
 
     const io = getIO();
-    io.emit('new-order', newOrder);
+    const areas = [...new Set(orderItems.map(item => item.area))];
+    areas.forEach(area => {
+      io.to(`kitchen-${area}`).emit('new-order', newOrder);
+    });
 
     res.status(201).json(newOrder);
   } catch (error) {
@@ -91,9 +94,11 @@ exports.updateItemStatus = async (req, res) => {
 
     await order.save();
 
-    // Emit the updated order event to all connected clients
     const io = getIO();
-    io.emit('update-order', order);  // Emit order update event
+    io.to(`kitchen-${item.area}`).emit('update-order', order);
+    if (status === 'ready') {
+      io.to(`waiter-${order.waiterId.toString()}`).emit('update-order', order);
+    }
 
     res.json(order);
   } catch (error) {
