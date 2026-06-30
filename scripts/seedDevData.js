@@ -26,6 +26,7 @@ const { mongoURI: envMongoURI } = require('../src/config');
 const seedRolesAndPermissions = require('../src/utils/seedRolesAndPermissions');
 
 const User = require('../src/models/User.model');
+const Role = require('../src/models/Role.model');
 const Section = require('../src/models/Section.model');
 const Table = require('../src/models/Table.model');
 const MenuCategory = require('../src/models/MenuCategory.model');
@@ -68,6 +69,14 @@ async function resetCollections() {
 async function seedUsers() {
   const pinExpiration = new Date(Date.now() + ONE_YEAR_MS);
 
+  // The frontend only treats a profile as complete once roleId is set
+  // (see user.controller.js#getUser), so this must point at the Role docs
+  // seedRolesAndPermissions() just created - otherwise login redirects to
+  // the (nonexistent) /complete-profile route and the app shows a blank page.
+  const roles = await Role.find({ name: { $in: DEV_USERS.map((u) => u.role) } });
+  const roleIdByName = {};
+  roles.forEach((role) => { roleIdByName[role.name] = role._id; });
+
   const users = {};
   for (const def of DEV_USERS) {
     const hashedPassword = await bcrypt.hash(def.password, 10);
@@ -75,6 +84,7 @@ async function seedUsers() {
       username: def.username,
       alias: def.alias,
       role: def.role,
+      roleId: roleIdByName[def.role],
       password: hashedPassword,
       pin: def.pin,
       pinExpiration,

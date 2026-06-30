@@ -320,10 +320,16 @@ exports.createFirstAdmin = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    let adminRole = await Role.findOne({ name: 'admin' });
+    if (!adminRole) {
+      adminRole = await Role.create({ name: 'admin', permissions: [] });
+    }
+
     const newUser = new User({
       username,
       password: hashedPassword,
       role: 'admin',
+      roleId: adminRole._id,
       pin,
       pinExpiration: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     });
