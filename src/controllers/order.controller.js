@@ -2,6 +2,7 @@ const Order = require('../models/Order.model');
 const MenuItem = require('../models/MenuItem.model');
 const PaymentLog = require('../models/PaymentLog.model');
 const Table = require('../models/Table.model');
+const TableSession = require('../models/TableSession.model');
 const { getIO } = require('../../websocket');
 
 // 'delivered' is further along the lifecycle than 'ready', so it must not be
@@ -12,6 +13,9 @@ function computeOrderStatus(items) {
   }
   if (items.every((item) => item.status === 'ready' || item.status === 'delivered')) {
     return 'ready';
+  }
+  if (items.every((item) => item.status === 'sent to cashier' || item.status === 'delivered')) {
+    return 'sent to cashier';
   }
   return 'preparing';
 }
@@ -145,7 +149,7 @@ exports.deliverOrder = async (req, res) => {
 };
 exports.getOrders = async (req, res) => {
   try {
-    const { preparationSection, tableId, tableSessionId } = req.query;
+    const { preparationSection, tableId, tableSessionId, waiterId } = req.query;
     const query = {};
 
     if (preparationSection) {
@@ -158,6 +162,10 @@ exports.getOrders = async (req, res) => {
 
     if (tableSessionId) {
       query.tableSessionId = tableSessionId;
+    }
+
+    if (waiterId) {
+      query.waiterId = waiterId;
     }
 
     const orders = await Order.find(query).populate('tableId', 'number status');
@@ -173,7 +181,7 @@ exports.getOrdersForPayment = async (req, res) => {
 
     const orders = await Order.find({
       tableId,
-      status: 'ready',
+      status: { $in: ['ready', 'sent to cashier', 'delivered'] },
       paid: false,
     });
 
@@ -194,7 +202,7 @@ exports.finalizePayment = async (req, res) => {
 
     const orders = await Order.find({
       tableId,
-      status: 'ready',
+      status: { $in: ['ready', 'sent to cashier', 'delivered'] },
       paid: false,
     });
 
@@ -302,7 +310,7 @@ exports.paySingleOrder = async (req, res) => {
     const { tip = 0, paymentMethods } = req.body;
 
     const order = await Order.findById(orderId);
-    if (!order || order.paid || order.status !== 'ready') {
+    if (!order || order.paid || !['ready', 'sent to cashier', 'delivered'].includes(order.status)) {
       return res.status(400).json({ error: 'Orden no válida para pago' });
     }
 
@@ -382,6 +390,127 @@ exports.sendAllOrdersToCashier = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+exports.sendItemsToPayment = async (req, res) => {
+  try {
+    const { tableId, tableSessionId, selections } = req.body;
+
+    const updatedOrders = [];
+
+    for (const { orderId, itemIds } of selections) {
+      const order = await Order.findById(orderId);
+      if (!order) continue;
+
+      for (const subdocId of itemIds) {
+        const item = order.items.find(i => i._id.toString() === subdocId);
+        if (item && (item.status === 'ready' || item.status === 'delivered')) {
+          item.status = 'sent to cashier';
+        }
+      }
+      order.status = computeOrderStatus(order.items);
+      await order.save();
+      updatedOrders.push(order);
+    }
+
+    const allOrders = await Order.find({ tableSessionId, paid: false });
+    const TERMINAL = ['sent to cashier', 'delivered'];
+    const allTerminal = allOrders.every(o =>
+      o.items.every(i => TERMINAL.includes(i.status))
+    );
+
+    let sessionClosed = false;
+    if (allTerminal) {
+      await TableSession.findOneAndUpdate(
+        { tableId, status: 'open' },
+        { status: 'closed', closedAt: new Date() }
+      );
+      await Table.findByIdAndUpdate(tableId, { status: 'maintenance' });
+      sessionClosed = true;
+    }
+
+    const io = getIO();
+    io.to('cashier').emit('orders-sent-to-cashier', updatedOrders);
+
+    res.json({ orders: updatedOrders, sessionClosed });
+  } catch (error) {
+    console.error('Error sending items to payment:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.removeOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.paid) return res.status(400).json({ error: 'Cannot delete a paid order' });
+
+    await Order.findByIdAndDelete(orderId);
+
+    const io = getIO();
+    io.to(`waiter-${order.waiterId.toString()}`).emit('order-deleted', { orderId });
+
+    res.json({ orderId });
+  } catch (error) {
+    console.error('Error removing order:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.removeOrderItem = async (req, res) => {
+  try {
+    const { orderId, itemSubdocId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const item = order.items.find(i => i._id.toString() === itemSubdocId);
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found in order' });
+    }
+    if (item.status !== 'preparing') {
+      return res.status(400).json({ error: 'Only items still preparing can be removed' });
+    }
+
+    order.total -= item.price * item.quantity;
+    order.items.pull({ _id: itemSubdocId });
+    order.status = order.items.length > 0 ? computeOrderStatus(order.items) : 'preparing';
+    await order.save();
+
+    res.json(order);
+  } catch (error) {
+    console.error('Error removing order item:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.deliverOrderItem = async (req, res) => {
+  try {
+    const { orderId, itemSubdocId } = req.params;
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    const item = order.items.find(i => i._id.toString() === itemSubdocId);
+    if (!item) return res.status(404).json({ error: 'Item not found in order' });
+    if (!['preparing', 'ready'].includes(item.status)) {
+      return res.status(400).json({ error: 'Item cannot be delivered from its current status' });
+    }
+
+    item.status = 'delivered';
+    order.status = computeOrderStatus(order.items);
+    await order.save();
+
+    const io = getIO();
+    io.to(`waiter-${order.waiterId.toString()}`).emit('update-order', order);
+
+    res.json(order);
+  } catch (error) {
+    console.error('Error delivering order item:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 exports.partialPayOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
