@@ -4,6 +4,18 @@ const PaymentLog = require('../models/PaymentLog.model');
 const Table = require('../models/Table.model');
 const { getIO } = require('../../websocket');
 
+// 'delivered' is further along the lifecycle than 'ready', so it must not be
+// treated as "not ready" or the rollup will regress the order to 'preparing'.
+function computeOrderStatus(items) {
+  if (items.every((item) => item.status === 'delivered')) {
+    return 'delivered';
+  }
+  if (items.every((item) => item.status === 'ready' || item.status === 'delivered')) {
+    return 'ready';
+  }
+  return 'preparing';
+}
+
 exports.createOrder = async (req, res) => {
   try {
     const { tableId, tableSessionId, items, preparationSection, waiterId, comment, numberOfGuests } = req.body;
@@ -75,14 +87,7 @@ exports.updateItemStatus = async (req, res) => {
     }
 
     item.status = status;
-
-    const allItemsReady = order.items.every((item) => item.status === 'ready');
-
-    if (allItemsReady) {
-      order.status = 'ready';
-    } else {
-      order.status = 'preparing';
-    }
+    order.status = computeOrderStatus(order.items);
 
     await order.save();
 
@@ -94,6 +99,43 @@ exports.updateItemStatus = async (req, res) => {
   } catch (error) {
     console.error('Error updating item status:', error.message);
     res.status(500).json({ error: 'Error updating item status' });
+  }
+};
+exports.deliverOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const isAssignedWaiter = order.waiterId.toString() === req.user.userId;
+    const isAdmin = req.user.role === 'admin';
+    if (!isAssignedWaiter && !isAdmin) {
+      return res.status(403).json({ error: 'Only the assigned waiter can deliver this order' });
+    }
+
+    if (order.status !== 'ready') {
+      return res.status(400).json({ error: 'Order must be ready before it can be delivered' });
+    }
+
+    order.items.forEach((item) => {
+      if (item.status === 'ready') {
+        item.status = 'delivered';
+      }
+    });
+    order.status = computeOrderStatus(order.items);
+
+    await order.save();
+
+    const io = getIO();
+    io.emit('update-order', order);
+
+    res.json(order);
+  } catch (error) {
+    console.error('Error delivering order:', error.message);
+    res.status(500).json({ error: 'Error delivering order' });
   }
 };
 exports.getOrders = async (req, res) => {

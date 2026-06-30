@@ -6,12 +6,13 @@ const {
   createOrder,
   getOrders,
   updateItemStatus,
+  deliverOrder,
   getOrdersForPayment,
   finalizePayment,
   getOrdersByArea,
   paySingleOrder,
   sendOrderToCashier,
-  sendAllOrdersToCashier, 
+  sendAllOrdersToCashier,
   partialPayOrder
 } = require('../controllers/order.controller');
 
@@ -195,6 +196,36 @@ router.get('/', authMiddleware, getOrders); // Listar ordenes
  *               $ref: '#/components/schemas/Error'
  */
 router.put('/:orderId/items/:itemId', authMiddleware, requirePermission('kitchenOrders'), updateItemStatus); // Cambiar estado de ítem
+
+/**
+ * @swagger
+ * /orders/{orderId}/deliver:
+ *   put:
+ *     tags: [Order Management]
+ *     summary: Mark an order as delivered
+ *     description: Marks all 'ready' items of an order as 'delivered'. Restricted to the waiter assigned to the order (or an admin).
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID to mark as delivered
+ *     responses:
+ *       200:
+ *         description: Order delivered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Order is not in 'ready' status
+ *       403:
+ *         description: Caller is not the assigned waiter
+ *       404:
+ *         description: Order not found
+ */
+router.put('/:orderId/deliver', authMiddleware, requirePermission('orders'), deliverOrder); // Mesero marca la orden como entregada
 
 /**
  * @swagger
