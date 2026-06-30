@@ -26,6 +26,7 @@ const { mongoURI: envMongoURI } = require('../src/config');
 const seedRolesAndPermissions = require('../src/utils/seedRolesAndPermissions');
 
 const User = require('../src/models/User.model');
+const Role = require('../src/models/Role.model');
 const Section = require('../src/models/Section.model');
 const Table = require('../src/models/Table.model');
 const MenuCategory = require('../src/models/MenuCategory.model');
@@ -68,6 +69,14 @@ async function resetCollections() {
 async function seedUsers() {
   const pinExpiration = new Date(Date.now() + ONE_YEAR_MS);
 
+  // The frontend only treats a profile as complete once roleId is set
+  // (see user.controller.js#getUser), so this must point at the Role docs
+  // seedRolesAndPermissions() just created - otherwise login redirects to
+  // the (nonexistent) /complete-profile route and the app shows a blank page.
+  const roles = await Role.find({ name: { $in: DEV_USERS.map((u) => u.role) } });
+  const roleIdByName = {};
+  roles.forEach((role) => { roleIdByName[role.name] = role._id; });
+
   const users = {};
   for (const def of DEV_USERS) {
     const hashedPassword = await bcrypt.hash(def.password, 10);
@@ -75,6 +84,7 @@ async function seedUsers() {
       username: def.username,
       alias: def.alias,
       role: def.role,
+      roleId: roleIdByName[def.role],
       password: hashedPassword,
       pin: def.pin,
       pinExpiration,
@@ -104,17 +114,52 @@ async function seedFloor() {
 }
 
 async function seedMenu() {
-  const inventoryItems = await Inventory.insertMany([
-    { name: 'Salsa de tomate', quantity: 20, unit: 'l', equivalentMl: 1000, cost: 2.5, minStock: 5, supplier: 'Distribuciones García', tags: ['Salsas'] },
-    { name: 'Queso mozzarella', quantity: 15, unit: 'kg', equivalentGr: 1000, cost: 8.0, minStock: 5, supplier: 'Lácteos del Norte', tags: ['Lácteos'] },
-    { name: 'Masa para pizza', quantity: 40, unit: 'unit', equivalentGr: 300, cost: 1.2, minStock: 10, supplier: 'Panadería Central', tags: ['Panadería'] },
-    { name: 'Carne molida', quantity: 25, unit: 'kg', equivalentGr: 1000, cost: 12.0, minStock: 5, supplier: 'Carnes Premium', tags: ['Carnes rojas'] },
-    { name: 'Pan de hamburguesa', quantity: 40, unit: 'unit', equivalentGr: 80, cost: 0.8, minStock: 10, supplier: 'Panadería Central', tags: ['Panadería'] },
-    { name: 'Coca Cola', quantity: 100, unit: 'bottle', equivalentMl: 350, cost: 1.5, minStock: 20, supplier: 'Distribuciones García', tags: ['Bebidas'] },
-    { name: 'Agua mineral', quantity: 100, unit: 'bottle', equivalentMl: 500, cost: 0.8, minStock: 20, supplier: 'Distribuciones García', tags: ['Bebidas'] },
+  const rawItems = await Inventory.insertMany([
+    { type: 'raw', name: 'Salsa de tomate', quantity: 20, unit: 'l', equivalentMl: 1000, cost: 2.5, minStock: 5, supplier: 'Distribuciones García', tags: ['Salsas'] },
+    { type: 'raw', name: 'Queso mozzarella', quantity: 15, unit: 'kg', equivalentGr: 1000, cost: 8.0, minStock: 5, supplier: 'Lácteos del Norte', tags: ['Lácteos'] },
+    { type: 'raw', name: 'Masa para pizza', quantity: 40, unit: 'unit', equivalentGr: 300, cost: 1.2, minStock: 10, supplier: 'Panadería Central', tags: ['Panadería'] },
+    { type: 'raw', name: 'Carne molida', quantity: 25, unit: 'kg', equivalentGr: 1000, cost: 12.0, minStock: 5, supplier: 'Carnes Premium', tags: ['Carnes rojas'] },
+    { type: 'raw', name: 'Pan de hamburguesa', quantity: 40, unit: 'unit', equivalentGr: 80, cost: 0.8, minStock: 10, supplier: 'Panadería Central', tags: ['Panadería'] },
+    { type: 'raw', name: 'Coca Cola', quantity: 100, unit: 'bottle', equivalentMl: 350, cost: 1.5, minStock: 20, supplier: 'Distribuciones García', tags: ['Bebidas'] },
+    { type: 'raw', name: 'Agua mineral', quantity: 100, unit: 'bottle', equivalentMl: 500, cost: 0.8, minStock: 20, supplier: 'Distribuciones García', tags: ['Bebidas'] },
+    { type: 'raw', name: 'Azúcar', quantity: 10, unit: 'kg', equivalentGr: 1000, cost: 1.2, minStock: 3, supplier: 'Distribuciones García', tags: ['Condimentos'] },
+    { type: 'raw', name: 'Canela en rama', quantity: 500, unit: 'g', equivalentGr: 1, cost: 0.05, minStock: 100, supplier: 'Distribuciones García', tags: ['Especias'] },
   ]);
   const inv = {};
-  inventoryItems.forEach((item) => { inv[item.name] = item; });
+  rawItems.forEach((item) => { inv[item.name] = item; });
+
+  // Prepared items: compuestos elaborados a partir de materias primas
+  const preparedItems = await Inventory.insertMany([
+    {
+      type: 'prepared',
+      name: 'Jarabe simple',
+      quantity: 3,
+      unit: 'l',
+      equivalentMl: 1000,
+      cost: 0,
+      minStock: 1,
+      tags: ['Bebidas'],
+      recipe: [
+        { inventoryItem: inv['Azúcar']._id, quantity: 1, unit: 'kg' },
+        { inventoryItem: inv['Agua mineral']._id, quantity: 1, unit: 'bottle' },
+      ],
+    },
+    {
+      type: 'prepared',
+      name: 'Salsa bolognesa',
+      quantity: 5,
+      unit: 'l',
+      equivalentMl: 1000,
+      cost: 0,
+      minStock: 2,
+      tags: ['Salsas'],
+      recipe: [
+        { inventoryItem: inv['Carne molida']._id, quantity: 500, unit: 'g' },
+        { inventoryItem: inv['Salsa de tomate']._id, quantity: 400, unit: 'ml' },
+      ],
+    },
+  ]);
+  preparedItems.forEach((item) => { inv[item.name] = item; });
 
   const categories = await MenuCategory.insertMany([
     { name: 'Pizzas', description: 'Pizzas al horno de leña', area: 'kitchen' },
@@ -129,36 +174,24 @@ async function seedMenu() {
       description: 'Salsa de tomate y mozzarella',
       price: 12.5,
       category: pizzas._id,
-      ingredients: [
-        { inventoryItem: inv['Salsa de tomate']._id, quantity: 100, unit: 'ml' },
-        { inventoryItem: inv['Queso mozzarella']._id, quantity: 200, unit: 'g' },
-        { inventoryItem: inv['Masa para pizza']._id, quantity: 1, unit: 'unit' },
-      ],
     },
     {
       name: 'Hamburguesa Clásica',
       description: 'Carne, queso y pan brioche',
       price: 10,
       category: hamburguesas._id,
-      ingredients: [
-        { inventoryItem: inv['Carne molida']._id, quantity: 150, unit: 'g' },
-        { inventoryItem: inv['Pan de hamburguesa']._id, quantity: 1, unit: 'unit' },
-        { inventoryItem: inv['Queso mozzarella']._id, quantity: 30, unit: 'g' },
-      ],
     },
     {
       name: 'Coca Cola',
       description: 'Lata 350ml',
       price: 2.5,
       category: bebidas._id,
-      ingredients: [{ inventoryItem: inv['Coca Cola']._id, quantity: 1, unit: 'unit' }],
     },
     {
       name: 'Agua Mineral',
       description: 'Botella 500ml',
       price: 1.5,
       category: bebidas._id,
-      ingredients: [{ inventoryItem: inv['Agua mineral']._id, quantity: 1, unit: 'unit' }],
     },
   ]);
 

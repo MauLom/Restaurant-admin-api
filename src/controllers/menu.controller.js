@@ -39,7 +39,6 @@ exports.createMenuItem = async (req, res) => {
       price,
       category,
       comments = [],
-      ingredients = []
     } = req.body;
 
     const newItem = new MenuItem({
@@ -48,7 +47,6 @@ exports.createMenuItem = async (req, res) => {
       price,
       category,
       comments,
-      ingredients
     });
 
     await newItem.save();
@@ -71,7 +69,6 @@ exports.updateMenuItem = async (req, res) => {
       price,
       category,
       comments,
-      ingredients
     } = req.body;
 
     const updatedItem = await MenuItem.findByIdAndUpdate(
@@ -82,7 +79,6 @@ exports.updateMenuItem = async (req, res) => {
         ...(price !== undefined && { price }),
         ...(category !== undefined && { category }),
         ...(comments !== undefined && { comments }),
-        ...(ingredients !== undefined && { ingredients })
       },
       { new: true }
     );
@@ -112,8 +108,7 @@ exports.getMenuItems = async (req, res) => {
       }
     }
     const items = await MenuItem.find(query)
-      .populate('category')
-      .populate('ingredients.inventoryItem');
+      .populate('category');
 
     res.json(items);
   } catch (error) {

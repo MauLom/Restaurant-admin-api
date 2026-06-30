@@ -1,9 +1,23 @@
 const mongoose = require('mongoose');
 
+const RecipeIngredientSchema = new mongoose.Schema({
+  inventoryItem: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Inventory',
+  },
+  quantity: { type: Number, default: 0 },
+  unit: { type: String, enum: ['ml', 'l', 'g', 'kg', 'unit', 'bottle'] },
+}, { _id: false });
+
 const InventorySchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+  },
+  type: {
+    type: String,
+    enum: ['raw', 'prepared'],
+    default: 'raw',
   },
   quantity: {
     type: Number,
@@ -42,7 +56,11 @@ const InventorySchema = new mongoose.Schema({
   preparationInstructions: {
     type: String,
     default: '',
-  }
+  },
+  recipe: {
+    type: [RecipeIngredientSchema],
+    default: [],
+  },
 }, {
   timestamps: true,
 });

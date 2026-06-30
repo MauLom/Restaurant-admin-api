@@ -154,8 +154,8 @@ exports.getWaiterTips = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 
-    const start = startDate ? new Date(startDate) : new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const end = endDate ? new Date(endDate) : new Date();
+    const start = startDate ? new Date(startDate + 'T00:00:00Z') : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate + 'T23:59:59Z') : new Date();
 
     if (isNaN(start) || isNaN(end)) {
       return res.status(400).json({ error: 'Invalid date range provided' });

@@ -9,6 +9,9 @@ router.post('/', authMiddleware, tableSessionController.createSession);
 // Obtener todas las sesiones abiertas
 router.get('/open', authMiddleware, tableSessionController.getOpenSessions);
 
+// Obtener sesiones activas (open + ready_for_payment) para código de colores
+router.get('/active', authMiddleware, tableSessionController.getActiveSessions);
+
 // Obtener una sesión con sus órdenes
 router.get('/:sessionId', authMiddleware, tableSessionController.getSessionWithOrders);
 
