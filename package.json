@@ -38,6 +38,7 @@
     "test:deployment": "node scripts/deployment-test.js",
     "test:load": "node scripts/load-test.js",
     "test:all": "npm run test && npm run test:deployment",
+    "seed:dev": "node scripts/seedDevData.js",
     "docs": "echo 'API Documentation available at http://localhost:5000/api-docs'"
   }
 }
