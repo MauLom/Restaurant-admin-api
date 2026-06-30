@@ -2,17 +2,19 @@ const Inventory = require('../models/Inventory.model');
 
 exports.getInventory = async (req, res) => {
   try {
-    const inventory = await Inventory.find();
+    const inventory = await Inventory.find().populate('recipe.inventoryItem', 'name unit');
     res.json(inventory);
   } catch (error) {
     console.error('Error fetching inventory:', error.message);
     res.status(500).json({ error: 'Error fetching inventory' });
   }
 };
+
 exports.addInventoryItem = async (req, res) => {
   try {
     const {
       name,
+      type = 'raw',
       quantity,
       unit,
       equivalentMl = 0,
@@ -21,11 +23,13 @@ exports.addInventoryItem = async (req, res) => {
       minStock = 0,
       supplier = '',
       tags = [],
-      preparationInstructions = ''
+      preparationInstructions = '',
+      recipe = [],
     } = req.body;
 
     const newItem = new Inventory({
       name,
+      type,
       quantity,
       unit,
       equivalentMl,
@@ -34,22 +38,26 @@ exports.addInventoryItem = async (req, res) => {
       minStock,
       supplier,
       tags,
-      preparationInstructions
+      preparationInstructions,
+      recipe,
     });
 
     await newItem.save();
+    await newItem.populate('recipe.inventoryItem', 'name unit');
     res.status(201).json(newItem);
   } catch (error) {
     console.error('Error adding inventory item:', error.message);
     res.status(500).json({ error: 'Error adding inventory item' });
   }
 };
+
 exports.updateInventoryItem = async (req, res) => {
   try {
     const { itemId } = req.params;
     const updateFields = req.body;
 
-    const updatedItem = await Inventory.findByIdAndUpdate(itemId, updateFields, { new: true });
+    const updatedItem = await Inventory.findByIdAndUpdate(itemId, updateFields, { new: true })
+      .populate('recipe.inventoryItem', 'name unit');
 
     if (!updatedItem) {
       return res.status(404).json({ error: 'Item not found' });
@@ -61,6 +69,7 @@ exports.updateInventoryItem = async (req, res) => {
     res.status(500).json({ error: 'Error updating inventory item' });
   }
 };
+
 exports.deleteInventoryItem = async (req, res) => {
   try {
     const { itemId } = req.params;
