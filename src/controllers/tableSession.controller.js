@@ -113,9 +113,9 @@ exports.closeSessionByTableId = async (req, res) => {
             return res.status(404).json({ error: 'No active session found for this table.' });
         }
 
-        const unpaidOrders = await Order.find({ tableId, paid: false });
+        const unpaidOrders = await Order.find({ tableSessionId: session._id, paid: false });
         if (unpaidOrders.length > 0) {
-            return res.status(400).json({ error: 'There are unpaid orders for this table.' });
+            return res.status(400).json({ error: 'unpaidOrdersExist' });
         }
 
         session.status = 'closed';
