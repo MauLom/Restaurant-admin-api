@@ -226,6 +226,11 @@ exports.finalizePayment = async (req, res) => {
 
     });
 
+    const io = getIO();
+    for (const order of orders) {
+      io.emit('update-order', order);
+    }
+
     res.json({ message: 'Payment completed', total, tip, grandTotal });
   } catch (error) {
     console.error('Error finalizing payment:', error.message);
@@ -317,6 +322,9 @@ exports.paySingleOrder = async (req, res) => {
       timestamp: new Date(),
     });
 
+    const io = getIO();
+    io.emit('update-order', order);
+
     res.json({ message: 'Orden pagada correctamente', total: order.total, tip });
   } catch (error) {
     console.error('Error al pagar la orden individual:', error.message);
@@ -404,6 +412,11 @@ exports.partialPayOrder = async (req, res) => {
     }
 
     await order.save();
+
+    if (allItemsPaid) {
+      const io = getIO();
+      io.emit('update-order', order);
+    }
 
     const partialTotal = order.items
       .filter(item => itemsToPay.includes(item.itemId.toString()))
