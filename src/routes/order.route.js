@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middlewares/authMiddleware');
-const { requirePermission } = require('../middlewares/permissionMiddleware');
+const { requirePermission, requireRole } = require('../middlewares/permissionMiddleware');
 const {
   createOrder,
   getOrders,
@@ -13,7 +13,9 @@ const {
   paySingleOrder,
   sendOrderToCashier,
   sendAllOrdersToCashier,
-  partialPayOrder
+  partialPayOrder,
+  sendItemsToPayment,
+  removeOrderItem,
 } = require('../controllers/order.controller');
 
 /**
@@ -476,5 +478,8 @@ router.put('/:orderId/send-to-cashier', authMiddleware, requirePermission('order
  *               $ref: '#/components/schemas/Success'
  */
 router.put('/send-all-to-cashier/:tableId', authMiddleware, requirePermission('orders'), sendAllOrdersToCashier); // Marcar TODAS las órdenes de la mesa como enviadas
+
+router.post('/send-to-cashier', authMiddleware, requirePermission('orders'), sendItemsToPayment);
+router.delete('/:orderId/items/:itemSubdocId', authMiddleware, requireRole('admin'), removeOrderItem);
 
 module.exports = router;
