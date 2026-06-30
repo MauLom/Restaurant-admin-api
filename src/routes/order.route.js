@@ -16,6 +16,7 @@ const {
   partialPayOrder,
   sendItemsToPayment,
   removeOrderItem,
+  removeOrder,
   deliverOrderItem,
 } = require('../controllers/order.controller');
 
@@ -483,5 +484,6 @@ router.put('/send-all-to-cashier/:tableId', authMiddleware, requirePermission('o
 router.post('/send-to-cashier', authMiddleware, requirePermission('orders'), sendItemsToPayment);
 router.put('/:orderId/items/:itemSubdocId/deliver', authMiddleware, requirePermission('orders'), deliverOrderItem);
 router.delete('/:orderId/items/:itemSubdocId', authMiddleware, requireRole('admin'), removeOrderItem);
+router.delete('/:orderId', authMiddleware, requireRole('admin'), removeOrder);
 
 module.exports = router;

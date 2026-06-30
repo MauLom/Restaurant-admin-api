@@ -429,6 +429,25 @@ exports.sendItemsToPayment = async (req, res) => {
   }
 };
 
+exports.removeOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.paid) return res.status(400).json({ error: 'Cannot delete a paid order' });
+
+    await Order.findByIdAndDelete(orderId);
+
+    const io = getIO();
+    io.to(`waiter-${order.waiterId.toString()}`).emit('order-deleted', { orderId });
+
+    res.json({ orderId });
+  } catch (error) {
+    console.error('Error removing order:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 exports.removeOrderItem = async (req, res) => {
   try {
     const { orderId, itemSubdocId } = req.params;
