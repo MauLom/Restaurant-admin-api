@@ -394,7 +394,7 @@ exports.sendItemsToPayment = async (req, res) => {
 
       for (const subdocId of itemIds) {
         const item = order.items.find(i => i._id.toString() === subdocId);
-        if (item && item.status === 'ready') {
+        if (item && (item.status === 'ready' || item.status === 'delivered')) {
           item.status = 'sent to cashier';
         }
       }
