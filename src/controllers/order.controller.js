@@ -181,7 +181,7 @@ exports.getOrdersForPayment = async (req, res) => {
 
     const orders = await Order.find({
       tableId,
-      status: { $in: ['ready', 'sent to cashier'] },
+      status: { $in: ['ready', 'sent to cashier', 'delivered'] },
       paid: false,
     });
 
@@ -202,7 +202,7 @@ exports.finalizePayment = async (req, res) => {
 
     const orders = await Order.find({
       tableId,
-      status: { $in: ['ready', 'sent to cashier'] },
+      status: { $in: ['ready', 'sent to cashier', 'delivered'] },
       paid: false,
     });
 
@@ -305,7 +305,7 @@ exports.paySingleOrder = async (req, res) => {
     const { tip = 0, paymentMethods } = req.body;
 
     const order = await Order.findById(orderId);
-    if (!order || order.paid || !['ready', 'sent to cashier'].includes(order.status)) {
+    if (!order || order.paid || !['ready', 'sent to cashier', 'delivered'].includes(order.status)) {
       return res.status(400).json({ error: 'Orden no válida para pago' });
     }
 
@@ -454,6 +454,32 @@ exports.removeOrderItem = async (req, res) => {
     res.json(order);
   } catch (error) {
     console.error('Error removing order item:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.deliverOrderItem = async (req, res) => {
+  try {
+    const { orderId, itemSubdocId } = req.params;
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    const item = order.items.find(i => i._id.toString() === itemSubdocId);
+    if (!item) return res.status(404).json({ error: 'Item not found in order' });
+    if (!['preparing', 'ready'].includes(item.status)) {
+      return res.status(400).json({ error: 'Item cannot be delivered from its current status' });
+    }
+
+    item.status = 'delivered';
+    order.status = computeOrderStatus(order.items);
+    await order.save();
+
+    const io = getIO();
+    io.to(`waiter-${order.waiterId.toString()}`).emit('update-order', order);
+
+    res.json(order);
+  } catch (error) {
+    console.error('Error delivering order item:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

@@ -16,6 +16,7 @@ const {
   partialPayOrder,
   sendItemsToPayment,
   removeOrderItem,
+  deliverOrderItem,
 } = require('../controllers/order.controller');
 
 /**
@@ -480,6 +481,7 @@ router.put('/:orderId/send-to-cashier', authMiddleware, requirePermission('order
 router.put('/send-all-to-cashier/:tableId', authMiddleware, requirePermission('orders'), sendAllOrdersToCashier); // Marcar TODAS las órdenes de la mesa como enviadas
 
 router.post('/send-to-cashier', authMiddleware, requirePermission('orders'), sendItemsToPayment);
+router.put('/:orderId/items/:itemSubdocId/deliver', authMiddleware, requirePermission('orders'), deliverOrderItem);
 router.delete('/:orderId/items/:itemSubdocId', authMiddleware, requireRole('admin'), removeOrderItem);
 
 module.exports = router;
