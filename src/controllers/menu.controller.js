@@ -1,5 +1,8 @@
 const MenuCategory = require('../models/MenuCategory.model');
 const MenuItem = require('../models/MenuItem.model');
+const Recipe = require('../models/Recipe.model');
+const Inventory = require('../models/Inventory.model');
+const { convertQuantity } = require('../utils/unitConversion');
 
 exports.createMenuCategory = async (req, res) => {
   try {
@@ -81,6 +84,7 @@ exports.updateMenuItem = async (req, res) => {
       category,
       comments,
       isInstant,
+      recipeId,
     } = req.body;
 
     const updatedItem = await MenuItem.findByIdAndUpdate(
@@ -92,6 +96,7 @@ exports.updateMenuItem = async (req, res) => {
         ...(category !== undefined && { category }),
         ...(comments !== undefined && { comments }),
         ...(isInstant !== undefined && { isInstant }),
+        ...(recipeId !== undefined && { recipeId: recipeId || null }),
       },
       { new: true }
     );
@@ -127,6 +132,56 @@ exports.getMenuItems = async (req, res) => {
   } catch (error) {
     console.error('Error fetching menu items:', error.message);
     res.status(500).json({ error: 'Error fetching menu items' });
+  }
+};
+
+exports.getItemsAvailability = async (req, res) => {
+  try {
+    const items = await MenuItem.find({}).select('_id recipeId');
+    const inventoryCache = {};
+    const availability = {};
+
+    for (const item of items) {
+      if (!item.recipeId) {
+        availability[item._id] = null; // no recipe → unlimited
+        continue;
+      }
+
+      const recipe = await Recipe.findById(item.recipeId);
+      if (!recipe || recipe.ingredients.length === 0) {
+        availability[item._id] = null;
+        continue;
+      }
+
+      let minServings = Infinity;
+      let hasLinkedIngredient = false;
+
+      for (const ingredient of recipe.ingredients) {
+        if (!ingredient.inventoryItemId) continue;
+
+        const invId = ingredient.inventoryItemId.toString();
+        if (!inventoryCache[invId]) {
+          inventoryCache[invId] = await Inventory.findById(ingredient.inventoryItemId);
+        }
+        const inventoryDoc = inventoryCache[invId];
+        if (!inventoryDoc) continue;
+
+        const qtyPerServing = convertQuantity(ingredient.quantity, ingredient.unit, inventoryDoc.unit);
+        if (qtyPerServing === null || qtyPerServing <= 0) continue;
+
+        hasLinkedIngredient = true;
+        const servings = Math.floor(inventoryDoc.quantity / qtyPerServing);
+        minServings = Math.min(minServings, servings);
+      }
+
+      // If no ingredient could be resolved, treat as unlimited
+      availability[item._id] = hasLinkedIngredient ? (minServings === Infinity ? 0 : minServings) : null;
+    }
+
+    res.json(availability);
+  } catch (error) {
+    console.error('Error getting item availability:', error.message);
+    res.status(500).json({ error: 'Error getting item availability' });
   }
 };
 

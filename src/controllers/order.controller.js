@@ -1,9 +1,12 @@
 const Order = require('../models/Order.model');
 const MenuItem = require('../models/MenuItem.model');
+const Recipe = require('../models/Recipe.model');
+const Inventory = require('../models/Inventory.model');
 const PaymentLog = require('../models/PaymentLog.model');
 const Table = require('../models/Table.model');
 const TableSession = require('../models/TableSession.model');
 const { getIO } = require('../../websocket');
+const { convertQuantity } = require('../utils/unitConversion');
 
 // 'delivered' is further along the lifecycle than 'ready', so it must not be
 // treated as "not ready" or the rollup will regress the order to 'preparing'.
@@ -48,6 +51,29 @@ exports.createOrder = async (req, res) => {
         area: itemArea,
         status: menuItem.isInstant ? 'ready' : 'preparing',
       });
+
+      // Deduct inventory for the linked recipe
+      if (menuItem.recipeId) {
+        const recipe = await Recipe.findById(menuItem.recipeId);
+        if (recipe) {
+          for (const ingredient of recipe.ingredients) {
+            if (!ingredient.inventoryItemId) continue;
+            const inventoryDoc = await Inventory.findById(ingredient.inventoryItemId);
+            if (!inventoryDoc) continue;
+            const deductAmount = convertQuantity(
+              ingredient.quantity * item.quantity,
+              ingredient.unit,
+              inventoryDoc.unit
+            );
+            if (deductAmount !== null) {
+              await Inventory.findByIdAndUpdate(
+                ingredient.inventoryItemId,
+                { $inc: { quantity: -deductAmount } }
+              );
+            }
+          }
+        }
+      }
     }
 
     const newOrder = new Order({

@@ -25,6 +25,11 @@ const MenuItemSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  recipeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Recipe',
+    default: null,
+  },
 }, {
   timestamps: true,
 });

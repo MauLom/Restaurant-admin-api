@@ -12,6 +12,7 @@ const {
   updateMenuItem,
   deleteMenuItem,
   getPreparationAreas,
+  getItemsAvailability,
 } = require('../controllers/menu.controller');
 
 router.get('/areas', authMiddleware, getPreparationAreas);
@@ -20,6 +21,7 @@ router.get('/categories', authMiddleware, getMenuCategories);
 router.delete('/categories/:categoryId', authMiddleware, requirePermission('manageCategories'), deleteMenuCategory);
 
 router.post('/items', authMiddleware, requirePermission('manageItems'), createMenuItem);
+router.get('/items/availability', authMiddleware, getItemsAvailability);
 router.get('/items', authMiddleware, getMenuItems);
 router.put('/items/:itemId', authMiddleware, requirePermission('manageItems'), updateMenuItem);
 router.delete('/items/:itemId', authMiddleware, requirePermission('manageItems'), deleteMenuItem);
