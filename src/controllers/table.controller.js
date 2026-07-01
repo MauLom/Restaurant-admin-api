@@ -2,6 +2,7 @@
 
 const Table = require('../models/Table.model');
 const Section = require('../models/Section.model');
+const Order = require('../models/Order.model');
 
 // Create a new table
 exports.createTable = async (req, res) => {
@@ -67,6 +68,11 @@ exports.releaseTable = async (req, res) => {
 
     if (table.status !== 'maintenance') {
       return res.status(400).json({ error: 'Table is not in maintenance status' });
+    }
+
+    const unpaidOrders = await Order.find({ tableId: table._id, paid: false });
+    if (unpaidOrders.length > 0) {
+      return res.status(400).json({ error: 'unpaidOrdersExist' });
     }
 
     table.status = 'available';
