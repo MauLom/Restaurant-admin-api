@@ -85,6 +85,9 @@ exports.updateMenuItem = async (req, res) => {
       comments,
       isInstant,
       recipeId,
+      directInventoryItemId,
+      directInventoryQuantity,
+      directInventoryUnit,
     } = req.body;
 
     const updatedItem = await MenuItem.findByIdAndUpdate(
@@ -97,6 +100,9 @@ exports.updateMenuItem = async (req, res) => {
         ...(comments !== undefined && { comments }),
         ...(isInstant !== undefined && { isInstant }),
         ...(recipeId !== undefined && { recipeId: recipeId || null }),
+        ...(directInventoryItemId !== undefined && { directInventoryItemId: directInventoryItemId || null }),
+        ...(directInventoryQuantity !== undefined && { directInventoryQuantity }),
+        ...(directInventoryUnit !== undefined && { directInventoryUnit }),
       },
       { new: true }
     );
@@ -137,45 +143,69 @@ exports.getMenuItems = async (req, res) => {
 
 exports.getItemsAvailability = async (req, res) => {
   try {
-    const items = await MenuItem.find({}).select('_id recipeId');
+    const items = await MenuItem.find({}).select(
+      '_id recipeId directInventoryItemId directInventoryQuantity directInventoryUnit'
+    );
     const inventoryCache = {};
     const availability = {};
 
+    const getInventoryDoc = async (inventoryItemId) => {
+      const invId = inventoryItemId.toString();
+      if (!(invId in inventoryCache)) {
+        inventoryCache[invId] = await Inventory.findById(inventoryItemId);
+      }
+      return inventoryCache[invId];
+    };
+
     for (const item of items) {
-      if (!item.recipeId) {
-        availability[item._id] = null; // no recipe → unlimited
-        continue;
-      }
-
-      const recipe = await Recipe.findById(item.recipeId);
-      if (!recipe || recipe.ingredients.length === 0) {
-        availability[item._id] = null;
-        continue;
-      }
-
-      let minServings = Infinity;
-      let hasLinkedIngredient = false;
-
-      for (const ingredient of recipe.ingredients) {
-        if (!ingredient.inventoryItemId) continue;
-
-        const invId = ingredient.inventoryItemId.toString();
-        if (!inventoryCache[invId]) {
-          inventoryCache[invId] = await Inventory.findById(ingredient.inventoryItemId);
+      if (item.recipeId) {
+        const recipe = await Recipe.findById(item.recipeId);
+        if (!recipe || recipe.ingredients.length === 0) {
+          availability[item._id] = null;
+          continue;
         }
-        const inventoryDoc = inventoryCache[invId];
-        if (!inventoryDoc) continue;
 
-        const qtyPerServing = convertQuantity(ingredient.quantity, ingredient.unit, inventoryDoc.unit);
-        if (qtyPerServing === null || qtyPerServing <= 0) continue;
+        let minServings = Infinity;
+        let hasLinkedIngredient = false;
 
-        hasLinkedIngredient = true;
-        const servings = Math.floor(inventoryDoc.quantity / qtyPerServing);
-        minServings = Math.min(minServings, servings);
+        for (const ingredient of recipe.ingredients) {
+          if (!ingredient.inventoryItemId) continue;
+
+          const inventoryDoc = await getInventoryDoc(ingredient.inventoryItemId);
+          if (!inventoryDoc) continue;
+
+          const qtyPerServing = convertQuantity(ingredient.quantity, ingredient.unit, inventoryDoc.unit);
+          if (qtyPerServing === null || qtyPerServing <= 0) continue;
+
+          hasLinkedIngredient = true;
+          const servings = Math.floor(inventoryDoc.quantity / qtyPerServing);
+          minServings = Math.min(minServings, servings);
+        }
+
+        // If no ingredient could be resolved, treat as unlimited
+        availability[item._id] = hasLinkedIngredient ? (minServings === Infinity ? 0 : minServings) : null;
+        continue;
       }
 
-      // If no ingredient could be resolved, treat as unlimited
-      availability[item._id] = hasLinkedIngredient ? (minServings === Infinity ? 0 : minServings) : null;
+      if (item.directInventoryItemId) {
+        const inventoryDoc = await getInventoryDoc(item.directInventoryItemId);
+        if (!inventoryDoc) {
+          availability[item._id] = null;
+          continue;
+        }
+
+        const qtyPerServing = convertQuantity(
+          item.directInventoryQuantity,
+          item.directInventoryUnit,
+          inventoryDoc.unit
+        );
+        availability[item._id] = (qtyPerServing === null || qtyPerServing <= 0)
+          ? null
+          : Math.floor(inventoryDoc.quantity / qtyPerServing);
+        continue;
+      }
+
+      availability[item._id] = null; // no recipe, no direct link → unlimited
     }
 
     res.json(availability);

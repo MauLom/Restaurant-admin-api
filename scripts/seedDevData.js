@@ -160,11 +160,25 @@ async function doMenu() {
     { name:'Bebidas',       description:'Bebidas frías',           area:'bar'     },
   ]);
 
+  // Ítems instantáneos (sin receta) — se vinculan directo a su ítem de
+  // inventario si el grupo "Inventario" ya fue seedeado (corre antes que este).
+  const cocaColaInv = await Inventory.findOne({ name:'Coca Cola' });
+  const aguaInv      = await Inventory.findOne({ name:'Agua mineral' });
+  if (!cocaColaInv || !aguaInv) {
+    console.log('  ⚠  No se encontró inventario de bebidas — Coca Cola/Agua Mineral quedan sin vínculo directo de inventario.');
+  }
+
   await MenuItem.insertMany([
     { name:'Pizza Margherita',    description:'Salsa de tomate y mozzarella', price:12.5, category:pizzas._id,       isInstant:false },
     { name:'Hamburguesa Clásica', description:'Carne, queso y pan brioche',   price:10,   category:hamburguesas._id, isInstant:false },
-    { name:'Coca Cola',           description:'Lata 350ml',                   price:2.5,  category:bebidas._id,      isInstant:true  },
-    { name:'Agua Mineral',        description:'Botella 500ml',                price:1.5,  category:bebidas._id,      isInstant:true  },
+    {
+      name:'Coca Cola', description:'Lata 350ml', price:2.5, category:bebidas._id, isInstant:true,
+      ...(cocaColaInv && { directInventoryItemId:cocaColaInv._id, directInventoryQuantity:1, directInventoryUnit:'bottle' }),
+    },
+    {
+      name:'Agua Mineral', description:'Botella 500ml', price:1.5, category:bebidas._id, isInstant:true,
+      ...(aguaInv && { directInventoryItemId:aguaInv._id, directInventoryQuantity:1, directInventoryUnit:'bottle' }),
+    },
   ]);
 }
 

@@ -73,6 +73,23 @@ exports.createOrder = async (req, res) => {
             }
           }
         }
+      } else if (menuItem.directInventoryItemId) {
+        // No-prep items (water, soda, etc.) deduct directly from one inventory
+        // item instead of going through a recipe.
+        const inventoryDoc = await Inventory.findById(menuItem.directInventoryItemId);
+        if (inventoryDoc) {
+          const deductAmount = convertQuantity(
+            menuItem.directInventoryQuantity * item.quantity,
+            menuItem.directInventoryUnit,
+            inventoryDoc.unit
+          );
+          if (deductAmount !== null) {
+            await Inventory.findByIdAndUpdate(
+              menuItem.directInventoryItemId,
+              { $inc: { quantity: -deductAmount } }
+            );
+          }
+        }
       }
     }
 

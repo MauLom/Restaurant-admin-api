@@ -30,6 +30,22 @@ const MenuItemSchema = new mongoose.Schema({
     ref: 'Recipe',
     default: null,
   },
+  // Alternative to recipeId for items with no preparation (water, soda, etc.):
+  // deducts stock directly from one inventory item instead of going through a recipe.
+  directInventoryItemId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Inventory',
+    default: null,
+  },
+  directInventoryQuantity: {
+    type: Number,
+    default: 1,
+  },
+  directInventoryUnit: {
+    type: String,
+    enum: ['ml', 'l', 'g', 'kg', 'unit', 'bottle'],
+    default: 'unit',
+  },
 }, {
   timestamps: true,
 });
