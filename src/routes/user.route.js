@@ -7,7 +7,7 @@ const {
   registerUser, updateUserById, deleteUser, getWaiters
 } = require('../controllers/user.controller');
 const {
-  createRole, assignPermissionsToRole, getAllPermissions,
+  createRole, updateRole, deleteRole, assignPermissionsToRole, getAllPermissions,
   getRoles, getRolePermissions, setRolePermissions
 } = require('../controllers/role.controller');
 const { authMiddleware } = require('../middlewares/authMiddleware');
@@ -451,43 +451,22 @@ router.get('/pins', authMiddleware, requirePermission('generatePins'), getPins);
 router.get('/waiters', authMiddleware, requirePermission('orders'), getWaiters);
 
 // Role management
-router.get('/roles', authMiddleware, requireRole('admin'), getRoles);
-router.post('/roles', authMiddleware, requireRole('admin'), createRole);
-router.get('/roles/:id/permissions', authMiddleware, requireRole('admin'), getRolePermissions);
-router.put('/roles/:id/permissions', authMiddleware, requireRole('admin'), setRolePermissions);
-router.post('/roles/assign-permissions', authMiddleware, requireRole('admin'), assignPermissionsToRole);
-router.get('/permissions', authMiddleware, requireRole('admin'), getAllPermissions);
+router.get('/roles', authMiddleware, requirePermission('manageRoles'), getRoles);
+router.post('/roles', authMiddleware, requirePermission('manageRoles'), createRole);
+router.put('/roles/:id', authMiddleware, requirePermission('manageRoles'), updateRole);
+router.delete('/roles/:id', authMiddleware, requirePermission('manageRoles'), deleteRole);
+router.get('/roles/:id/permissions', authMiddleware, requirePermission('manageRoles'), getRolePermissions);
+router.put('/roles/:id/permissions', authMiddleware, requirePermission('manageRoles'), setRolePermissions);
+router.post('/roles/assign-permissions', authMiddleware, requirePermission('manageRoles'), assignPermissionsToRole);
+router.get('/permissions', authMiddleware, requirePermission('manageRoles'), getAllPermissions);
 
 // Others
 router.post('/first-admin', specialAccessMiddleware, createFirstAdmin);
 
-/**
- * @swagger
- * /users:
- *   get:
- *     tags: [User Management]
- *     summary: Get all users
- *     description: Retrieve list of all users (admin only)
- *     responses:
- *       200:
- *         description: List of users
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/User'
- *       401:
- *         description: Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get('/', authMiddleware, requireRole('admin'), getAllUsers);
+router.get('/', authMiddleware, requirePermission('manageUsers'), getAllUsers);
 
-// Edit/delete existing accounts (admin only)
-router.put('/:userId', authMiddleware, requireRole('admin'), updateUserById);
-router.delete('/:userId', authMiddleware, requireRole('admin'), deleteUser);
+// Edit/delete existing accounts
+router.put('/:userId', authMiddleware, requirePermission('manageUsers'), updateUserById);
+router.delete('/:userId', authMiddleware, requirePermission('manageUsers'), deleteUser);
 
 module.exports = router;

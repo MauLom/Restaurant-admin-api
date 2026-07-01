@@ -6,6 +6,10 @@ const RoleSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  isSuperRole: {
+    type: Boolean,
+    default: false,
+  },
   permissions: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Permission',

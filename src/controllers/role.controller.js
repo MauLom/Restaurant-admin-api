@@ -1,20 +1,70 @@
 const Role = require('../models/Role.model');
 const Permission = require('../models/Permission.model');
+const User = require('../models/User.model');
 
 exports.createRole = async (req, res) => {
   try {
-    const { name, permissions } = req.body;
+    const { name, isSuperRole = false, permissions = [] } = req.body;
 
-    const newRole = new Role({
-      name,
-      permissions, // array of permission IDs
-    });
+    const permissionIds = [];
+    for (const permName of permissions) {
+      let permission = await Permission.findOne({ name: permName });
+      if (!permission) permission = await new Permission({ name: permName }).save();
+      permissionIds.push(permission._id);
+    }
 
+    const newRole = new Role({ name, isSuperRole, permissions: permissionIds });
     await newRole.save();
-    res.status(201).json({ message: 'Role created successfully', newRole });
+
+    const populated = await Role.findById(newRole._id).populate('permissions');
+    res.status(201).json({ message: 'Role created successfully', role: populated });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ error: 'A role with that name already exists' });
+    }
     console.error('Error creating role:', error.message);
     res.status(500).json({ error: 'Error creating role' });
+  }
+};
+
+exports.updateRole = async (req, res) => {
+  try {
+    const { name, isSuperRole } = req.body;
+    const role = await Role.findById(req.params.id);
+    if (!role) return res.status(404).json({ error: 'Role not found' });
+
+    if (name !== undefined) role.name = name;
+    if (isSuperRole !== undefined) role.isSuperRole = isSuperRole;
+    await role.save();
+
+    const populated = await Role.findById(role._id).populate('permissions');
+    res.json({ message: 'Role updated', role: populated });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ error: 'A role with that name already exists' });
+    }
+    console.error('Error updating role:', error.message);
+    res.status(500).json({ error: 'Error updating role' });
+  }
+};
+
+exports.deleteRole = async (req, res) => {
+  try {
+    const role = await Role.findById(req.params.id);
+    if (!role) return res.status(404).json({ error: 'Role not found' });
+
+    const usersWithRole = await User.countDocuments({ role: role.name });
+    if (usersWithRole > 0) {
+      return res.status(409).json({
+        error: `Cannot delete: ${usersWithRole} user(s) are assigned to this role`
+      });
+    }
+
+    await Role.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Role deleted' });
+  } catch (error) {
+    console.error('Error deleting role:', error.message);
+    res.status(500).json({ error: 'Error deleting role' });
   }
 };
 
@@ -35,7 +85,7 @@ exports.assignPermissionsToRole = async (req, res) => {
 
 exports.getAllPermissions = async (req, res) => {
   try {
-    const permissions = await Permission.find();
+    const permissions = await Permission.find().sort({ name: 1 });
     res.json(permissions);
   } catch (error) {
     console.error('Error fetching permissions:', error.message);
@@ -45,7 +95,7 @@ exports.getAllPermissions = async (req, res) => {
 
 exports.getRoles = async (req, res) => {
   try {
-    const roles = await Role.find().select('name');
+    const roles = await Role.find().populate('permissions').sort({ name: 1 });
     res.json(roles);
   } catch (error) {
     console.error('Error fetching roles:', error.message);
@@ -56,9 +106,7 @@ exports.getRoles = async (req, res) => {
 exports.getRolePermissions = async (req, res) => {
   try {
     const role = await Role.findById(req.params.id).populate('permissions');
-    if (!role) {
-      return res.status(404).json({ error: 'Role not found' });
-    }
+    if (!role) return res.status(404).json({ error: 'Role not found' });
     res.json(role.permissions);
   } catch (error) {
     console.error('Error fetching role permissions:', error.message);
@@ -71,16 +119,12 @@ exports.setRolePermissions = async (req, res) => {
     const { permissions } = req.body; // array of permission names
 
     const role = await Role.findById(req.params.id);
-    if (!role) {
-      return res.status(404).json({ error: 'Role not found' });
-    }
+    if (!role) return res.status(404).json({ error: 'Role not found' });
 
     const permissionIds = [];
     for (const name of permissions) {
       let permission = await Permission.findOne({ name });
-      if (!permission) {
-        permission = await new Permission({ name }).save();
-      }
+      if (!permission) permission = await new Permission({ name }).save();
       permissionIds.push(permission._id);
     }
 

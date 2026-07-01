@@ -1,5 +1,6 @@
 const User = require('../models/User.model');
-const Role = require('../models/Role.model'); 
+const Role = require('../models/Role.model');
+const Permission = require('../models/Permission.model');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { jwtSecret, masterPassword } = require('../config');
@@ -62,7 +63,13 @@ exports.getUser = async (req, res) => {
     const isProfileComplete = !!(user.username && user.roleId);
 
     const role = await Role.findOne({ name: user.role }).populate('permissions');
-    const permissions = role?.permissions?.map(p => p.name) || [];
+    let permissions;
+    if (role?.isSuperRole) {
+      const allPerms = await Permission.find({}).select('name');
+      permissions = allPerms.map(p => p.name);
+    } else {
+      permissions = role?.permissions?.map(p => p.name) || [];
+    }
 
     res.json({
       user,
