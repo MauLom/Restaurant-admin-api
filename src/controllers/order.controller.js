@@ -46,14 +46,16 @@ exports.createOrder = async (req, res) => {
         comments: item.comments,
         quantity: item.quantity,
         area: itemArea,
+        status: menuItem.isInstant ? 'ready' : 'preparing',
       });
     }
 
     const newOrder = new Order({
       tableId,
-      tableSessionId, // aquí lo asignamos
+      tableSessionId,
       waiterId,
       items: orderItems,
+      status: computeOrderStatus(orderItems),
       total,
       section: preparationSection,
       comment: comment,
@@ -181,7 +183,7 @@ exports.getOrdersForPayment = async (req, res) => {
 
     const orders = await Order.find({
       tableId,
-      status: { $in: ['ready', 'sent to cashier', 'delivered'] },
+      status: 'sent to cashier',
       paid: false,
     });
 
@@ -202,7 +204,7 @@ exports.finalizePayment = async (req, res) => {
 
     const orders = await Order.find({
       tableId,
-      status: { $in: ['ready', 'sent to cashier', 'delivered'] },
+      status: 'sent to cashier',
       paid: false,
     });
 
@@ -493,8 +495,8 @@ exports.deliverOrderItem = async (req, res) => {
 
     const item = order.items.find(i => i._id.toString() === itemSubdocId);
     if (!item) return res.status(404).json({ error: 'Item not found in order' });
-    if (!['preparing', 'ready'].includes(item.status)) {
-      return res.status(400).json({ error: 'Item cannot be delivered from its current status' });
+    if (item.status !== 'ready') {
+      return res.status(400).json({ error: 'Item cannot be delivered until it is marked ready by kitchen staff' });
     }
 
     item.status = 'delivered';
@@ -574,7 +576,7 @@ exports.partialPayOrder = async (req, res) => {
 
 exports.getTablesWithPendingPayment = async (req, res) => {
   try {
-    const orders = await Order.find({ status: 'ready', paid: false }).select('tableId').lean();
+    const orders = await Order.find({ status: 'sent to cashier', paid: false }).select('tableId').lean();
     const tableIds = [...new Set(orders.map(o => o.tableId?.toString()).filter(Boolean))];
     res.json(tableIds);
   } catch (error) {

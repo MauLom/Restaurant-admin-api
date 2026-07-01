@@ -13,15 +13,15 @@ module.exports = {
       console.log('A client connected:', socket.id);
 
       socket.on('join-room', ({ role, userId }) => {
-        if (role === 'kitchen' || role === 'bar') {
-          socket.join(`kitchen-${role}`);
-          console.log(`Socket ${socket.id} joined kitchen-${role}`);
-        } else if (role === 'waiter') {
+        if (role === 'waiter') {
           socket.join(`waiter-${userId}`);
           console.log(`Socket ${socket.id} joined waiter-${userId}`);
         } else if (role === 'cashier') {
           socket.join('cashier');
           console.log(`Socket ${socket.id} joined cashier`);
+        } else {
+          socket.join(`kitchen-${role}`);
+          console.log(`Socket ${socket.id} joined kitchen-${role}`);
         }
       });
 

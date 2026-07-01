@@ -31,6 +31,15 @@ exports.deleteMenuCategory = async (req, res) => {
   }
 };
 
+exports.getPreparationAreas = async (req, res) => {
+  try {
+    const areas = await MenuCategory.distinct('area');
+    res.json(areas);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching preparation areas' });
+  }
+};
+
 exports.createMenuItem = async (req, res) => {
   try {
     const {
@@ -39,6 +48,7 @@ exports.createMenuItem = async (req, res) => {
       price,
       category,
       comments = [],
+      isInstant = false,
     } = req.body;
 
     const newItem = new MenuItem({
@@ -47,6 +57,7 @@ exports.createMenuItem = async (req, res) => {
       price,
       category,
       comments,
+      isInstant,
     });
 
     await newItem.save();
@@ -69,6 +80,7 @@ exports.updateMenuItem = async (req, res) => {
       price,
       category,
       comments,
+      isInstant,
     } = req.body;
 
     const updatedItem = await MenuItem.findByIdAndUpdate(
@@ -79,6 +91,7 @@ exports.updateMenuItem = async (req, res) => {
         ...(price !== undefined && { price }),
         ...(category !== undefined && { category }),
         ...(comments !== undefined && { comments }),
+        ...(isInstant !== undefined && { isInstant }),
       },
       { new: true }
     );

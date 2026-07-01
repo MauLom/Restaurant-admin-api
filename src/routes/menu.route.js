@@ -11,8 +11,10 @@ const {
   getMenuItems,
   updateMenuItem,
   deleteMenuItem,
+  getPreparationAreas,
 } = require('../controllers/menu.controller');
 
+router.get('/areas', authMiddleware, getPreparationAreas);
 router.post('/categories', authMiddleware, requirePermission('manageCategories'), createMenuCategory);
 router.get('/categories', authMiddleware, getMenuCategories);
 router.delete('/categories/:categoryId', authMiddleware, requirePermission('manageCategories'), deleteMenuCategory);

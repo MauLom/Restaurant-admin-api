@@ -24,16 +24,14 @@ async function seedRolesAndPermissions() {
   }
 
   for (const [roleName, access] of Object.entries(ROLE_ACCESS)) {
-    const role = await Role.findOneAndUpdate(
+    await Role.findOneAndUpdate(
       { name: roleName },
-      { $setOnInsert: { name: roleName, permissions: [] } },
+      {
+        name: roleName,
+        permissions: access.map((name) => permissionDocs[name]._id),
+      },
       { upsert: true, new: true }
     );
-
-    if (role.permissions.length === 0) {
-      role.permissions = access.map((name) => permissionDocs[name]._id);
-      await role.save();
-    }
   }
 }
 

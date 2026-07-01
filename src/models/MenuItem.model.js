@@ -20,7 +20,11 @@ const MenuItemSchema = new mongoose.Schema({
   comments: {
     type: [String],
     default: [],
-  }
+  },
+  isInstant: {
+    type: Boolean,
+    default: false,
+  },
 }, {
   timestamps: true,
 });

@@ -10,7 +10,6 @@ const CategorySchema = new mongoose.Schema({
   },
   area: {
     type: String,
-    enum: ['kitchen', 'bar'],
     required: true,
   },
   items: [{
