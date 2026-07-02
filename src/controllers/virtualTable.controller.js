@@ -326,9 +326,15 @@ exports.deactivateVirtualTable = async (req, res) => {
     }
 
     if (virtualTable.status === 'occupied') {
-      return res.status(400).json({ 
-        error: 'No se puede desactivar una mesa virtual ocupada' 
+      return res.status(400).json({
+        error: 'La mesa virtual está ocupada, cierra la sesión antes de eliminarla'
       });
+    }
+
+    // Igual que al liberar una mesa física: no se puede eliminar con consumo pendiente de cobro
+    const unpaidOrders = await Order.find({ tableId: virtualTableId, paid: false });
+    if (unpaidOrders.length > 0) {
+      return res.status(400).json({ error: 'unpaidOrdersExist' });
     }
 
     // Restaurar estado de las mesas físicas

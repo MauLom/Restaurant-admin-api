@@ -9,7 +9,17 @@ exports.createSession = async (req, res) => {
         // Verifica si ya existe una sesión abierta para esta mesa
         const existing = await TableSession.findOne({ tableId, status: 'open' });
         if (existing) {
-            return res.status(400).json({ error: 'Ya existe una sesión abierta para esta mesa.' });
+            const unpaidOrders = await Order.find({ tableId, paid: false });
+            if (unpaidOrders.length > 0) {
+                return res.status(400).json({ error: 'unpaidOrdersExist' });
+            }
+
+            // No hay nada pendiente de cobro: la sesión quedó abierta por un estado
+            // desincronizado (ej. Table.status editado directamente sin pasar por el
+            // cierre de sesión). Se cierra automáticamente para no bloquear la mesa.
+            existing.status = 'closed';
+            existing.closedAt = new Date();
+            await existing.save();
         }
 
         const session = new TableSession({
