@@ -13,8 +13,20 @@ const {
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { specialAccessMiddleware } = require('../middlewares/specialAccessMiddleware');
 const { requireRole, requirePermission } = require('../middlewares/permissionMiddleware');
+const { enableDemoAndSignup } = require('../config');
 
 const router = express.Router();
+
+// Autoregistro de staff y accesos de demo — pensados para el deployment de
+// showcase/ventas. Deployments de cliente productivo setean
+// ENABLE_DEMO_AND_SIGNUP=false para que estas rutas públicas dejen de existir
+// (ver regla de seguridad: /demo-reset borra colecciones enteras sin filtro).
+const requireDemoAndSignupEnabled = (req, res, next) => {
+  if (!enableDemoAndSignup) {
+    return res.status(404).end();
+  }
+  next();
+};
 
 /**
  * @swagger
@@ -89,8 +101,8 @@ const router = express.Router();
  *               $ref: '#/components/schemas/Error'
  */
 // Public routes
-router.post('/signup', createUser);
-router.post('/register', registerUser);
+router.post('/signup', requireDemoAndSignupEnabled, createUser);
+router.post('/register', requireDemoAndSignupEnabled, registerUser);
 
 /**
  * @swagger
@@ -258,7 +270,7 @@ router.get('/exists', checkUsersExist);
  *                   example: "This is a demonstration account with pre-populated sample data."
  */
 // Demo access routes
-router.get('/demo-access', getDemoAccess);
+router.get('/demo-access', requireDemoAndSignupEnabled, getDemoAccess);
 
 /**
  * @swagger
@@ -304,7 +316,7 @@ router.get('/demo-access', getDemoAccess);
  *                           type: boolean
  *                           example: true
  */
-router.post('/demo-login', loginDemo);
+router.post('/demo-login', requireDemoAndSignupEnabled, loginDemo);
 
 /**
  * @swagger
@@ -342,7 +354,7 @@ router.post('/demo-login', loginDemo);
  *                     type: string
  *                   example: ["Click on any order to view details", "Use the status filters to find specific orders"]
  */
-router.get('/demo-instructions/:section?', getDemoInstructions);
+router.get('/demo-instructions/:section?', requireDemoAndSignupEnabled, getDemoInstructions);
 
 /**
  * @swagger
@@ -379,7 +391,7 @@ router.get('/demo-instructions/:section?', getDemoInstructions);
  *                       type: string
  *                       example: "999999"
  */
-router.post('/demo-reset', resetDemoData);
+router.post('/demo-reset', requireDemoAndSignupEnabled, resetDemoData);
 
 /**
  * @swagger
