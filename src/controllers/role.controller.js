@@ -1,6 +1,8 @@
 const Role = require('../models/Role.model');
 const Permission = require('../models/Permission.model');
 const User = require('../models/User.model');
+const { logActivity } = require('../services/activityLog.service');
+const { ACTIONS } = require('../constants/activityLog.constants');
 
 exports.createRole = async (req, res) => {
   try {
@@ -15,6 +17,18 @@ exports.createRole = async (req, res) => {
 
     const newRole = new Role({ name, isSuperRole, permissions: permissionIds });
     await newRole.save();
+
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.ROLE_CREATE,
+        traceType: 'role',
+        traceId: newRole._id,
+        metadata: { roleName: newRole.name },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
 
     const populated = await Role.findById(newRole._id).populate('permissions');
     res.status(201).json({ message: 'Role created successfully', role: populated });
@@ -36,6 +50,18 @@ exports.updateRole = async (req, res) => {
     if (name !== undefined) role.name = name;
     if (isSuperRole !== undefined) role.isSuperRole = isSuperRole;
     await role.save();
+
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.ROLE_UPDATE,
+        traceType: 'role',
+        traceId: role._id,
+        metadata: { roleName: role.name },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
 
     const populated = await Role.findById(role._id).populate('permissions');
     res.json({ message: 'Role updated', role: populated });
@@ -61,6 +87,19 @@ exports.deleteRole = async (req, res) => {
     }
 
     await Role.findByIdAndDelete(req.params.id);
+
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.ROLE_DELETE,
+        traceType: 'role',
+        traceId: role._id,
+        metadata: { roleName: role.name },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
+
     res.json({ message: 'Role deleted' });
   } catch (error) {
     console.error('Error deleting role:', error.message);
@@ -130,6 +169,18 @@ exports.setRolePermissions = async (req, res) => {
 
     role.permissions = permissionIds;
     await role.save();
+
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.ROLE_PERMISSIONS_UPDATED,
+        traceType: 'role',
+        traceId: role._id,
+        metadata: { roleName: role.name, permissionCount: permissionIds.length },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
 
     const updatedRole = await Role.findById(role._id).populate('permissions');
     res.json({ message: 'Permissions updated', role: updatedRole });

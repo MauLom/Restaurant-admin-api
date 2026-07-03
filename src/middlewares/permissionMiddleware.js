@@ -21,12 +21,14 @@ exports.requireRole = (...roles) => async (req, res, next) => {
 };
 
 // Dynamic permission gate. Super roles bypass the specific permission check.
-exports.requirePermission = (permissionName) => async (req, res, next) => {
+// Accepts one or more permission names — any of them grants access (OR logic),
+// matching the frontend's ProtectedRoute requiredAccess semantics.
+exports.requirePermission = (...permissionNames) => async (req, res, next) => {
   try {
     const role = await Role.findOne({ name: req.user?.role }).populate('permissions');
     if (role?.isSuperRole) return next();
 
-    const hasPermission = role?.permissions?.some(p => p.name === permissionName);
+    const hasPermission = role?.permissions?.some(p => permissionNames.includes(p.name));
     if (!hasPermission) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }

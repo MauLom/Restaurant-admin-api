@@ -1,5 +1,7 @@
 const User = require('../models/User.model');
 const Role = require('../models/Role.model');
+const { logActivity } = require('../services/activityLog.service');
+const { ACTIONS } = require('../constants/activityLog.constants');
 const Permission = require('../models/Permission.model');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -195,6 +197,18 @@ exports.updateUserById = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.USER_UPDATE,
+        traceType: 'user',
+        traceId: updatedUser._id,
+        metadata: { username: updatedUser.username, isActive: updatedUser.isActive },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
+
     res.json(updatedUser);
   } catch (error) {
     if (error.code === 11000) {
@@ -217,6 +231,18 @@ exports.deleteUser = async (req, res) => {
     const deletedUser = await User.findByIdAndDelete(userId);
     if (!deletedUser) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.USER_DELETE,
+        traceType: 'user',
+        traceId: deletedUser._id,
+        metadata: { username: deletedUser.username },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
     }
 
     res.json({ message: 'User deleted successfully' });
@@ -276,6 +302,19 @@ exports.generatePin = async (req, res) => {
     });
 
     await newUser.save();
+
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.USER_CREATE,
+        traceType: 'user',
+        traceId: newUser._id,
+        metadata: { username: newUser.username, role: newUser.role },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
+
     res.status(201).json(newUser);
   } catch (error) {
     if (error.code === 11000) {

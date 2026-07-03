@@ -1,6 +1,8 @@
 const TableSession = require('../models/TableSession.model');
 const Table = require('../models/Table.model');
 const Order = require('../models/Order.model');
+const { logActivity } = require('../services/activityLog.service');
+const { ACTIONS } = require('../constants/activityLog.constants');
 
 exports.createSession = async (req, res) => {
     try {
@@ -32,7 +34,19 @@ exports.createSession = async (req, res) => {
         await session.save();
 
         // Cambia el estado de la mesa a "occupied"
-        await Table.findByIdAndUpdate(tableId, { status: 'occupied' });
+        const table = await Table.findByIdAndUpdate(tableId, { status: 'occupied' });
+
+        try {
+            await logActivity({
+                actorId: req.user.userId,
+                action: ACTIONS.TABLE_OPEN,
+                traceType: 'tableSession',
+                traceId: session._id,
+                metadata: { tableId, tableNumber: table?.number, numberOfGuests },
+            });
+        } catch (err) {
+            console.error('activity log failed:', err.message);
+        }
 
         res.status(201).json(session);
     } catch (err) {
@@ -116,7 +130,19 @@ exports.closeTableSession = async (req, res) => {
         session.status = 'closed';
         await session.save();
 
-        await Table.findByIdAndUpdate(session.tableId, { status: 'maintenance' });
+        const table = await Table.findByIdAndUpdate(session.tableId, { status: 'maintenance' });
+
+        try {
+            await logActivity({
+                actorId: req.user.userId,
+                action: ACTIONS.TABLE_CLOSE,
+                traceType: 'tableSession',
+                traceId: session._id,
+                metadata: { tableId: session.tableId, tableNumber: table?.number },
+            });
+        } catch (err) {
+            console.error('activity log failed:', err.message);
+        }
 
         res.json({ message: 'Sesión cerrada correctamente', session });
     } catch (error) {
@@ -149,6 +175,18 @@ exports.closeSessionByTableId = async (req, res) => {
         if (table) {
             table.status = 'maintenance';
             await table.save();
+        }
+
+        try {
+            await logActivity({
+                actorId: req.user.userId,
+                action: ACTIONS.TABLE_CLOSE,
+                traceType: 'tableSession',
+                traceId: session._id,
+                metadata: { tableId, tableNumber: table?.number },
+            });
+        } catch (err) {
+            console.error('activity log failed:', err.message);
         }
 
         res.json({ message: 'Session closed successfully', session });

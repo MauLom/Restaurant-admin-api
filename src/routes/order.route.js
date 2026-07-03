@@ -5,6 +5,7 @@ const { requirePermission, requireRole } = require('../middlewares/permissionMid
 const {
   createOrder,
   getOrders,
+  getOrderById,
   updateItemStatus,
   deliverOrder,
   getOrdersForPayment,
@@ -487,5 +488,6 @@ router.post('/send-to-cashier', authMiddleware, requirePermission('orders'), sen
 router.put('/:orderId/items/:itemSubdocId/deliver', authMiddleware, requirePermission('orders'), deliverOrderItem);
 router.delete('/:orderId/items/:itemSubdocId', authMiddleware, requireRole('admin'), removeOrderItem);
 router.delete('/:orderId', authMiddleware, requireRole('admin'), removeOrder);
+router.get('/:orderId', authMiddleware, requirePermission('orders', 'activityLogs'), getOrderById);
 
 module.exports = router;

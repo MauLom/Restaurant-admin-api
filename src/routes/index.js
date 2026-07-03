@@ -13,5 +13,6 @@ router.use('/menu', require('./menu.route'));
 router.use('/settings', require('./settings.route'));
 router.use('/tableSession', require('./tableSession.route'));
 router.use('/recipes', require('./recipe.route'));
+router.use('/activity-logs', require('./activityLog.route'));
 
 module.exports = router;

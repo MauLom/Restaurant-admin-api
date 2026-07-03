@@ -2,6 +2,8 @@ const VirtualTable = require('../models/VirtualTable.model');
 const Table = require('../models/Table.model');
 const TableSession = require('../models/TableSession.model');
 const Order = require('../models/Order.model');
+const { logActivity } = require('../services/activityLog.service');
+const { ACTIONS } = require('../constants/activityLog.constants');
 
 // Crear una nueva mesa virtual
 exports.createVirtualTable = async (req, res) => {
@@ -81,6 +83,18 @@ exports.createVirtualTable = async (req, res) => {
     const populatedVirtualTable = await VirtualTable.findById(virtualTable._id)
       .populate('physicalTables.tableId')
       .populate('createdBy', 'username alias');
+
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.VIRTUAL_TABLE_CREATE,
+        traceType: 'virtualTable',
+        traceId: virtualTable._id,
+        metadata: { name: virtualTable.name, mode: virtualTable.mode },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
 
     res.status(201).json(populatedVirtualTable);
   } catch (error) {
@@ -347,6 +361,18 @@ exports.deactivateVirtualTable = async (req, res) => {
 
     virtualTable.setActive(false);
     await virtualTable.save();
+
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.VIRTUAL_TABLE_DEACTIVATE,
+        traceType: 'virtualTable',
+        traceId: virtualTable._id,
+        metadata: { name: virtualTable.name },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
 
     res.json({ message: 'Mesa virtual desactivada correctamente', virtualTable });
   } catch (error) {

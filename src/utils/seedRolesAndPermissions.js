@@ -5,7 +5,7 @@ const Permission = require('../models/Permission.model');
 // admin is a super role — it bypasses all permission checks at runtime.
 // The permissions listed here are kept in sync so the UI shows them correctly.
 const ROLE_ACCESS = {
-  admin: ['orders', 'sections', 'waiterOrders', 'cashier', 'analytics', 'manageCategories', 'manageItems', 'inventory', 'kitchenOrders', 'generatePins', 'manageUsers', 'manageRoles'],
+  admin: ['orders', 'sections', 'waiterOrders', 'cashier', 'analytics', 'manageCategories', 'manageItems', 'inventory', 'kitchenOrders', 'generatePins', 'manageUsers', 'manageRoles', 'activityLogs'],
   waiter: ['orders', 'waiterOrders'],
   cashier: ['cashier'],
   kitchen: ['kitchenOrders'],

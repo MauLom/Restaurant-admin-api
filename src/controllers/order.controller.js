@@ -7,6 +7,8 @@ const Table = require('../models/Table.model');
 const TableSession = require('../models/TableSession.model');
 const { getIO } = require('../../websocket');
 const { convertQuantity } = require('../utils/unitConversion');
+const { logActivity } = require('../services/activityLog.service');
+const { ACTIONS } = require('../constants/activityLog.constants');
 
 // 'delivered' is further along the lifecycle than 'ready', so it must not be
 // treated as "not ready" or the rollup will regress the order to 'preparing'.
@@ -118,6 +120,18 @@ exports.createOrder = async (req, res) => {
       io.to(`kitchen-${area}`).emit('new-order', newOrder);
     });
 
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.ORDER_CREATE,
+        traceType: 'order',
+        traceId: newOrder._id,
+        metadata: { tableId, tableNumber: table?.number, itemCount: orderItems.length, total },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
+
     res.status(201).json(newOrder);
   } catch (error) {
     res.status(500).json({ error: 'Error creating order', details: error.message });
@@ -147,6 +161,22 @@ exports.updateItemStatus = async (req, res) => {
     io.to(`kitchen-${item.area}`).emit('update-order', order);
     if (status === 'ready') {
       io.to(`waiter-${order.waiterId.toString()}`).emit('update-order', order);
+    }
+
+    // Only 'ready' is logged here — every other transition through this endpoint
+    // would reintroduce the per-item KDS noise the activity log is meant to avoid.
+    if (status === 'ready') {
+      try {
+        await logActivity({
+          actorId: req.user.userId,
+          action: ACTIONS.ORDER_ITEM_READY,
+          traceType: 'order',
+          traceId: order._id,
+          metadata: { itemName: item.name, area: item.area },
+        });
+      } catch (err) {
+        console.error('activity log failed:', err.message);
+      }
     }
 
     res.json(order);
@@ -186,6 +216,18 @@ exports.deliverOrder = async (req, res) => {
     const io = getIO();
     io.emit('update-order', order);
 
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.ORDER_DELIVERED,
+        traceType: 'order',
+        traceId: order._id,
+        metadata: {},
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
+
     res.json(order);
   } catch (error) {
     console.error('Error delivering order:', error.message);
@@ -218,6 +260,19 @@ exports.getOrders = async (req, res) => {
   } catch (error) {
     console.error('Error fetching orders:', error.message);
     res.status(500).json({ error: 'Error fetching orders' });
+  }
+};
+exports.getOrderById = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.json(order);
+  } catch (error) {
+    console.error('Error fetching order:', error.message);
+    res.status(500).json({ error: 'Error fetching order' });
   }
 };
 exports.getOrdersForPayment = async (req, res) => {
@@ -262,6 +317,18 @@ exports.finalizePayment = async (req, res) => {
       order.tip = tip;
       order.status = 'paid';
       await order.save();
+
+      try {
+        await logActivity({
+          actorId: req.user.userId,
+          action: ACTIONS.PAYMENT_COMPLETED,
+          traceType: 'order',
+          traceId: order._id,
+          metadata: { amount: order.total, tip },
+        });
+      } catch (err) {
+        console.error('activity log failed:', err.message);
+      }
     }
 
     const grandTotal = total + tip;
@@ -375,6 +442,18 @@ exports.paySingleOrder = async (req, res) => {
       timestamp: new Date(),
     });
 
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.PAYMENT_COMPLETED,
+        traceType: 'order',
+        traceId: order._id,
+        metadata: { amount: order.total, tip },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
+
     const io = getIO();
     io.emit('update-order', order);
 
@@ -400,6 +479,18 @@ exports.sendOrderToCashier = async (req, res) => {
     order.status = 'sent to cashier';
     await order.save();
 
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.ORDER_SEND_TO_CASHIER,
+        traceType: 'order',
+        traceId: order._id,
+        metadata: {},
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
+
     const io = getIO();
     io.emit('order-sent-to-cashier', order);
 
@@ -424,6 +515,18 @@ exports.sendAllOrdersToCashier = async (req, res) => {
       order.status = 'sent to cashier';
       await order.save();
       updatedOrders.push(order);
+
+      try {
+        await logActivity({
+          actorId: req.user.userId,
+          action: ACTIONS.ORDER_SEND_TO_CASHIER,
+          traceType: 'order',
+          traceId: order._id,
+          metadata: {},
+        });
+      } catch (err) {
+        console.error('activity log failed:', err.message);
+      }
     }
 
     const io = getIO();
@@ -546,6 +649,18 @@ exports.deliverOrderItem = async (req, res) => {
     order.status = computeOrderStatus(order.items);
     await order.save();
 
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.ORDER_ITEM_DELIVERED,
+        traceType: 'order',
+        traceId: order._id,
+        metadata: { itemName: item.name },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
+
     const io = getIO();
     io.to(`waiter-${order.waiterId.toString()}`).emit('update-order', order);
 
@@ -609,6 +724,18 @@ exports.partialPayOrder = async (req, res) => {
       timestamp: new Date(),
       isPartial: true,
     });
+
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: allItemsPaid ? ACTIONS.PAYMENT_COMPLETED : ACTIONS.PAYMENT_PARTIAL,
+        traceType: 'order',
+        traceId: order._id,
+        metadata: { amount: partialTotal, tip },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
 
     res.json({ message: 'Pago parcial procesado exitosamente', total: partialTotal, tip, grandTotal });
   } catch (error) {

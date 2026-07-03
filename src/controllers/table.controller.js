@@ -3,6 +3,8 @@
 const Table = require('../models/Table.model');
 const Section = require('../models/Section.model');
 const Order = require('../models/Order.model');
+const { logActivity } = require('../services/activityLog.service');
+const { ACTIONS } = require('../constants/activityLog.constants');
 
 // Create a new table
 exports.createTable = async (req, res) => {
@@ -77,6 +79,18 @@ exports.releaseTable = async (req, res) => {
 
     table.status = 'available';
     await table.save();
+
+    try {
+      await logActivity({
+        actorId: req.user.userId,
+        action: ACTIONS.TABLE_RELEASE,
+        traceType: 'table',
+        traceId: table._id,
+        metadata: { tableNumber: table.number },
+      });
+    } catch (err) {
+      console.error('activity log failed:', err.message);
+    }
 
     res.json(table);
   } catch (error) {
