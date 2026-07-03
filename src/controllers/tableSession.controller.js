@@ -1,8 +1,36 @@
 const TableSession = require('../models/TableSession.model');
 const Table = require('../models/Table.model');
+const VirtualTable = require('../models/VirtualTable.model');
 const Order = require('../models/Order.model');
 const { logActivity } = require('../services/activityLog.service');
 const { ACTIONS } = require('../constants/activityLog.constants');
+
+// tableId puede apuntar a un Table físico o a un VirtualTable (no tienen `ref` común) —
+// estos helpers detectan a cuál corresponde y actualizan el modelo correcto en cada caso.
+async function markTableOccupied(tableId, { sessionId, waiterId, numberOfGuests }) {
+    const table = await Table.findByIdAndUpdate(tableId, { status: 'occupied' });
+    if (table) return table.number;
+
+    const virtualTable = await VirtualTable.findByIdAndUpdate(tableId, {
+        status: 'occupied',
+        currentGuests: numberOfGuests,
+        currentSession: { sessionId, waiterId, startTime: new Date() },
+        lastUsed: new Date(),
+    });
+    return virtualTable?.name;
+}
+
+async function markTableReleased(tableId) {
+    const table = await Table.findByIdAndUpdate(tableId, { status: 'maintenance' });
+    if (table) return table.number;
+
+    const virtualTable = await VirtualTable.findByIdAndUpdate(tableId, {
+        status: 'available',
+        currentGuests: 0,
+        currentSession: {},
+    });
+    return virtualTable?.name;
+}
 
 exports.createSession = async (req, res) => {
     try {
@@ -33,8 +61,8 @@ exports.createSession = async (req, res) => {
 
         await session.save();
 
-        // Cambia el estado de la mesa a "occupied"
-        const table = await Table.findByIdAndUpdate(tableId, { status: 'occupied' });
+        // Cambia el estado de la mesa (física o virtual) a "occupied"
+        const tableNumber = await markTableOccupied(tableId, { sessionId: session._id, waiterId, numberOfGuests });
 
         try {
             await logActivity({
@@ -42,7 +70,7 @@ exports.createSession = async (req, res) => {
                 action: ACTIONS.TABLE_OPEN,
                 traceType: 'tableSession',
                 traceId: session._id,
-                metadata: { tableId, tableNumber: table?.number, numberOfGuests },
+                metadata: { tableId, tableNumber, numberOfGuests },
             });
         } catch (err) {
             console.error('activity log failed:', err.message);
@@ -130,7 +158,7 @@ exports.closeTableSession = async (req, res) => {
         session.status = 'closed';
         await session.save();
 
-        const table = await Table.findByIdAndUpdate(session.tableId, { status: 'maintenance' });
+        const tableNumber = await markTableReleased(session.tableId);
 
         try {
             await logActivity({
@@ -138,7 +166,7 @@ exports.closeTableSession = async (req, res) => {
                 action: ACTIONS.TABLE_CLOSE,
                 traceType: 'tableSession',
                 traceId: session._id,
-                metadata: { tableId: session.tableId, tableNumber: table?.number },
+                metadata: { tableId: session.tableId, tableNumber },
             });
         } catch (err) {
             console.error('activity log failed:', err.message);
@@ -171,11 +199,7 @@ exports.closeSessionByTableId = async (req, res) => {
 
         await session.save();
 
-        const table = await Table.findById(tableId);
-        if (table) {
-            table.status = 'maintenance';
-            await table.save();
-        }
+        const tableNumber = await markTableReleased(tableId);
 
         try {
             await logActivity({
@@ -183,7 +207,7 @@ exports.closeSessionByTableId = async (req, res) => {
                 action: ACTIONS.TABLE_CLOSE,
                 traceType: 'tableSession',
                 traceId: session._id,
-                metadata: { tableId, tableNumber: table?.number },
+                metadata: { tableId, tableNumber },
             });
         } catch (err) {
             console.error('activity log failed:', err.message);
