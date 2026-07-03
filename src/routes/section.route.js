@@ -21,5 +21,7 @@ router.get('/:id', authMiddleware, getSectionById);
 router.post('/:id/tables', authMiddleware, requirePermission('sections'), addTableToSection);
 router.put('/:id', authMiddleware, requirePermission('sections'), updateSection);
 router.delete('/:id', authMiddleware, requirePermission('sections'), deleteSection);
+router.put('/:id/tables/:tableId', authMiddleware, requirePermission('sections'), updateTableInSection);
+router.delete('/:id/tables/:tableId', authMiddleware, requirePermission('sections'), deleteTableFromSection);
 
 module.exports = router;
