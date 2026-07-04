@@ -32,6 +32,9 @@ async function markTableReleased(tableId) {
     return virtualTable?.name;
 }
 
+exports.markTableOccupied = markTableOccupied;
+exports.markTableReleased = markTableReleased;
+
 exports.createSession = async (req, res) => {
     try {
         const { tableId, waiterId, numberOfGuests, comment } = req.body;

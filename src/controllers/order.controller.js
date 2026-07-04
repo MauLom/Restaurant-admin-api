@@ -5,6 +5,7 @@ const Inventory = require('../models/Inventory.model');
 const PaymentLog = require('../models/PaymentLog.model');
 const Table = require('../models/Table.model');
 const TableSession = require('../models/TableSession.model');
+const { markTableReleased } = require('./tableSession.controller');
 const { getIO } = require('../../websocket');
 const { convertQuantity } = require('../utils/unitConversion');
 const { logActivity } = require('../services/activityLog.service');
@@ -571,7 +572,7 @@ exports.sendItemsToPayment = async (req, res) => {
         { tableId, status: 'open' },
         { status: 'closed', closedAt: new Date() }
       );
-      await Table.findByIdAndUpdate(tableId, { status: 'maintenance' });
+      await markTableReleased(tableId);
       sessionClosed = true;
     }
 
